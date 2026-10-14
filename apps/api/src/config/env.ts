@@ -34,6 +34,12 @@ const envSchema = z
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     PORT: z.coerce.number().int().positive().default(4000),
     TZ: z.string().default('America/Argentina/Buenos_Aires'),
+    // Habilita el worker de mantenimiento dentro del mismo proceso del servidor.
+    // Útil en plataformas que corren un único contenedor (p. ej. Vercel Services).
+    ENABLE_WORKER: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
 
     DATABASE_URL: z.string().min(1, 'DATABASE_URL es obligatorio'),
     TEST_DATABASE_URL: optionalString,

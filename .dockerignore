@@ -1,0 +1,23 @@
+# Dependencias y artefactos de build (se regeneran dentro de la imagen).
+node_modules
+**/node_modules
+
+dist
+**/dist
+
+# Control de versiones y configuración local.
+.git
+.gitignore
+.vercel
+
+# Variables de entorno (NUNCA deben copiarse a la imagen).
+.env
+**/.env
+.env.*
+**/.env.*
+
+# Base de datos local, logs y cobertura.
+*.db
+*.log
+coverage
+**/coverage

@@ -1,0 +1,41 @@
+# syntax=docker/dockerfile:1
+# ---------------------------------------------------------------------------
+# API PADEL CLUB — imagen para Vercel Services (runtime: container).
+#
+# El contexto de build es la RAÍZ del repositorio (el servicio `api` usa root "."),
+# por eso se copian también `packages/shared` y los manifests del monorepo.
+# tsup ya empaqueta `@padel/shared` dentro del bundle, pero el workspace debe
+# resolver la dependencia en la instalación.
+# ---------------------------------------------------------------------------
+FROM node:20-bookworm-slim
+
+WORKDIR /app
+# CI=true evita prompts interactivos en `npm ci`.
+ENV CI=true
+
+# Manifiestos primero para aprovechar la caché de capas de Docker.
+COPY package.json package-lock.json ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
+COPY packages/shared/package.json packages/shared/package.json
+RUN npm ci
+
+# Fuente necesaria para compilar la API (y el paquete compartido que empaqueta).
+COPY packages/shared ./packages/shared
+COPY apps/api ./apps/api
+
+# Genera el cliente Prisma y compila el backend a `dist/`.
+RUN npm run prisma:generate -w @padel/api \
+ && npm run build -w @padel/api
+
+# Runtime: variables de producción.
+ENV NODE_ENV=production
+# Vercel espera el server en el puerto 80 por defecto (se puede sobreescribir con PORT).
+ENV PORT=80
+
+WORKDIR /app/apps/api
+EXPOSE 80
+
+# Aplica migraciones pendientes y arranca el servidor.
+# El worker de mantenimiento corre embebido si ENABLE_WORKER=true.
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
