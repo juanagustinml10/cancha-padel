@@ -1,0 +1,364 @@
+// ---------------------------------------------------------------------------
+// PADEL CLUB — Esquema de base de datos (PostgreSQL)
+// Convenciones:
+//  - Identificadores UUID.
+//  - Fechas/hora en `timestamptz` (UTC). La zona del club se maneja en la app.
+//  - Dinero en enteros de centavos + moneda ISO (ARS).
+//  - Horas de franjas ("HH:mm") se guardan como String: son hora local del club,
+//    sin fecha, y así se evita cualquier ambigüedad de zona horaria.
+// La restricción de exclusión anti-solapamiento (btree_gist) se agrega en una
+// migración SQL manual, porque Prisma no la soporta de forma declarativa.
+// ---------------------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------ Enums --------------------------------------
+
+enum Role {
+  ADMIN
+  RECEPTION
+}
+
+enum CourtType {
+  INDOOR
+  OUTDOOR
+}
+
+enum CourtStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+enum BookingSource {
+  ONLINE
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  EXPIRED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum PaymentProvider {
+  MERCADOPAGO
+  MANUAL
+}
+
+// Medio de pago elegido por el cliente al reservar (intención, no cobro).
+enum BookingPaymentMethod {
+  MERCADOPAGO
+  CASH
+  TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  IN_PROCESS
+  APPROVED
+  REJECTED
+  CANCELLED
+  REFUNDED
+}
+
+enum WebhookEventStatus {
+  RECEIVED
+  PROCESSED
+  DUPLICATE
+  FAILED
+}
+
+// ------------------------------ Auth ---------------------------------------
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  fullName     String
+  role         Role
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime? @db.Timestamptz(3)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @db.Timestamptz(3)
+
+  sessions          Session[]
+  auditLogs         AuditLog[]    @relation("AuditActor")
+  createdBlocks     CourtBlock[]  @relation("BlockCreatedBy")
+  createdBookings   Booking[]     @relation("BookingCreatedBy")
+  cancelledBookings Booking[]     @relation("BookingCancelledBy")
+
+  @@index([role])
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @db.Timestamptz(3)
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ------------------------------ Clientes -----------------------------------
+
+model Customer {
+  id        String   @id @default(uuid())
+  fullName  String
+  email     String   @unique
+  phone     String
+  notes     String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  bookings Booking[]
+
+  @@index([fullName])
+}
+
+// ------------------------------ Canchas ------------------------------------
+
+model Court {
+  id          String      @id @default(uuid())
+  name        String
+  type        CourtType
+  surface     String?
+  hasLighting Boolean     @default(true)
+  status      CourtStatus @default(ACTIVE)
+  sortOrder   Int         @default(0)
+  description String?
+  createdAt   DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime    @updatedAt @db.Timestamptz(3)
+
+  schedules   CourtSchedule[]
+  pricingRules PricingRule[]
+  blocks      CourtBlock[]
+  bookings    Booking[]
+  gallery     GalleryImage[]
+
+  @@index([status, sortOrder])
+}
+
+// Horarios de apertura (OperatingHours). courtId null = aplica a todas las canchas.
+model CourtSchedule {
+  id          String  @id @default(uuid())
+  courtId     String?
+  court       Court?  @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  weekday     Int // 0 = domingo .. 6 = sábado (zona del club)
+  opensAt     String // "HH:mm"
+  closesAt    String // "HH:mm"
+  slotMinutes Int     @default(60)
+  isActive    Boolean @default(true)
+
+  @@index([courtId, weekday])
+}
+
+// Tarifas. courtId null = todas las canchas. weekday null = todos los días.
+model PricingRule {
+  id              String    @id @default(uuid())
+  courtId         String?
+  court           Court?    @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  weekday         Int?
+  startTime       String // "HH:mm"
+  endTime         String // "HH:mm"
+  durationMinutes Int
+  priceCents      Int
+  currency        String    @default("ARS")
+  validFrom       DateTime  @default(now()) @db.Timestamptz(3)
+  validTo         DateTime? @db.Timestamptz(3)
+  isActive        Boolean   @default(true)
+  priority        Int       @default(0)
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(3)
+
+  bookings Booking[]
+
+  @@index([courtId, weekday, durationMinutes])
+  @@index([isActive, priority])
+}
+
+// Bloqueos (CourtClosure): mantenimiento, eventos, uso interno.
+model CourtBlock {
+  id          String   @id @default(uuid())
+  courtId     String?
+  court       Court?   @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  startsAt    DateTime @db.Timestamptz(3)
+  endsAt      DateTime @db.Timestamptz(3)
+  reason      String
+  createdById String?
+  createdBy   User?    @relation("BlockCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([courtId, startsAt])
+  @@index([startsAt])
+}
+
+// ------------------------------ Reservas -----------------------------------
+
+model Booking {
+  id                String        @id @default(uuid())
+  code              String        @unique
+  courtId           String
+  court             Court         @relation(fields: [courtId], references: [id], onDelete: Restrict)
+  customerId        String
+  customer          Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  pricingRuleId     String?
+  pricingRule       PricingRule?  @relation(fields: [pricingRuleId], references: [id], onDelete: SetNull)
+  startsAt          DateTime      @db.Timestamptz(3)
+  endsAt            DateTime      @db.Timestamptz(3)
+  durationMinutes   Int
+  status            BookingStatus
+  source            BookingSource
+  // Medio de pago elegido por el cliente. Null en reservas cargadas por el staff.
+  paymentMethod     BookingPaymentMethod?
+  priceTotalCents   Int
+  depositAmountCents Int
+  paidAmountCents   Int           @default(0)
+  currency          String        @default("ARS")
+  pricingSnapshot   Json
+  notes             String?
+  expiresAt         DateTime?     @db.Timestamptz(3)
+  confirmedAt       DateTime?     @db.Timestamptz(3)
+  cancelledAt       DateTime?     @db.Timestamptz(3)
+  cancelledById     String?
+  cancelledBy       User?         @relation("BookingCancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)
+  cancellationReason String?
+  createdById       String?
+  createdBy         User?         @relation("BookingCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt         DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime      @updatedAt @db.Timestamptz(3)
+
+  payments Payment[]
+
+  @@index([courtId, startsAt])
+  @@index([status, expiresAt])
+  @@index([customerId])
+  @@index([createdAt])
+}
+
+// ------------------------------ Pagos --------------------------------------
+
+model Payment {
+  id                   String          @id @default(uuid())
+  bookingId            String
+  booking              Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  provider             PaymentProvider @default(MERCADOPAGO)
+  providerPaymentId    String?         @unique
+  providerPreferenceId String?
+  method               String?
+  amountCents          Int
+  currency             String          @default("ARS")
+  status               PaymentStatus
+  statusDetail         String?
+  rawPayload           Json?
+  paidAt               DateTime?       @db.Timestamptz(3)
+  refundedAt           DateTime?       @db.Timestamptz(3)
+  // Casos que requieren intervención manual (pago tardío, importe/ moneda distinta, etc.).
+  // Un pago con requiresReview NO se usa para confirmar una reserva automáticamente.
+  requiresReview       Boolean         @default(false)
+  reviewReason         String?
+  reviewedAt           DateTime?       @db.Timestamptz(3)
+  createdAt            DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime        @updatedAt @db.Timestamptz(3)
+
+  @@index([bookingId])
+  @@index([status])
+  @@index([requiresReview])
+}
+
+// Registro crudo de cada webhook recibido. Garantiza idempotencia y auditoría.
+model PaymentWebhookEvent {
+  id                String             @id @default(uuid())
+  provider          PaymentProvider    @default(MERCADOPAGO)
+  // Clave determinística de deduplicación: id de evento de MP si existe; si no,
+  // una clave derivada del tipo y del pago notificado. Evita procesar dos veces el mismo evento.
+  dedupKey          String             @unique
+  eventId           String?
+  eventType         String?
+  providerPaymentId String?
+  signature         String?
+  requestId         String?
+  // Permite reconstruir la verificación de firma al reintentar (sin guardar headers sensibles).
+  payload           Json
+  status            WebhookEventStatus @default(RECEIVED)
+  error             String?
+  attempts          Int                @default(0)
+  retryable         Boolean            @default(false)
+  nextAttemptAt     DateTime?          @db.Timestamptz(3)
+  receivedAt        DateTime           @default(now()) @db.Timestamptz(3)
+  processedAt       DateTime?          @db.Timestamptz(3)
+
+  @@index([providerPaymentId])
+  @@index([status])
+  @@index([status, retryable, nextAttemptAt])
+}
+
+// ------------------------------ Contenido ----------------------------------
+
+model GalleryImage {
+  id        String  @id @default(uuid())
+  url       String
+  alt       String?
+  courtId   String?
+  court     Court?  @relation(fields: [courtId], references: [id], onDelete: SetNull)
+  sortOrder Int     @default(0)
+
+  @@index([sortOrder])
+}
+
+model Faq {
+  id        String  @id @default(uuid())
+  question  String
+  answer    String
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+}
+
+model Promotion {
+  id          String  @id @default(uuid())
+  title       String
+  description String
+  badge       String?
+  sortOrder   Int     @default(0)
+  isActive    Boolean @default(true)
+}
+
+// Configuración clave/valor del club (JSONB).
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
+// ------------------------------ Auditoría ----------------------------------
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String?
+  actor     User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  diff      Json?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([entity, entityId])
+  @@index([action])
+  @@index([createdAt])
+}

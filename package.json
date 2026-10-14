@@ -1,0 +1,36 @@
+{
+  "name": "padel-club",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sistema web para la gestión de un complejo de pádel (sitio público, reservas online y panel administrativo).",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev:web",
+    "dev:web": "npm run dev -w @padel/web",
+    "dev:api": "npm run dev -w @padel/api",
+    "dev:worker": "npm run dev:worker -w @padel/api",
+    "build": "npm run build:web",
+    "build:web": "npm run build -w @padel/web",
+    "build:api": "npm run build -w @padel/api",
+    "preview": "npm run preview -w @padel/web",
+    "lint": "npm run lint:web && npm run lint:api",
+    "lint:web": "npm run lint -w @padel/web",
+    "lint:api": "npm run lint -w @padel/api",
+    "typecheck": "npm run typecheck:web && npm run typecheck:api",
+    "typecheck:web": "npm run typecheck -w @padel/web",
+    "typecheck:api": "npm run typecheck -w @padel/api",
+    "test": "npm run test:web && npm run test:api",
+    "test:web": "npm run test -w @padel/web",
+    "test:api": "npm run test -w @padel/api",
+    "prisma:generate": "npm run prisma:generate -w @padel/api",
+    "prisma:migrate": "npm run prisma:migrate -w @padel/api",
+    "prisma:deploy": "npm run prisma:deploy -w @padel/api",
+    "prisma:seed": "npm run prisma:seed -w @padel/api"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
