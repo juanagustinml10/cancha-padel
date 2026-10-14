@@ -1,5 +1,10 @@
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { DEMO_CLUB } from '@/config/site';
+
+const NAME_PARTS = DEMO_CLUB.name.trim().split(/\s+/);
+const NAME_HEAD = NAME_PARTS.slice(0, -1).join(' ').toUpperCase();
+const NAME_TAIL = (NAME_PARTS[NAME_PARTS.length - 1] ?? '').toUpperCase();
 
 export function Logo({ compact = false }: { compact?: boolean }) {
   return (
@@ -28,7 +33,8 @@ export function Logo({ compact = false }: { compact?: boolean }) {
           compact ? 'text-base' : 'text-lg',
         )}
       >
-        PADEL <span className="text-accent">CLUB</span>
+        {NAME_HEAD ? `${NAME_HEAD} ` : ''}
+        <span className="text-accent">{NAME_TAIL}</span>
       </span>
     </Link>
   );

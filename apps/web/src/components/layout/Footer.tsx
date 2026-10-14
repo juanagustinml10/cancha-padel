@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Clock, Instagram, Mail, MapPin, Phone } from 'lucide-react';
 import { Logo } from './Logo';
 import { DEMO_CLUB } from '@/config/site';
+import { env } from '@/lib/env';
 
 const YEAR = new Date().getFullYear();
 
@@ -24,15 +25,17 @@ export function Footer() {
             {DEMO_CLUB.tagline} Reservá tu cancha online y viví el pádel en un complejo pensado para
             jugadores de todos los niveles.
           </p>
-          <a
-            href={DEMO_CLUB.instagram}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex w-fit items-center gap-2 text-sm text-white/80 transition-colors hover:text-accent"
-          >
-            <Instagram className="h-4 w-4" aria-hidden />
-            Seguinos en Instagram
-          </a>
+          {DEMO_CLUB.instagram ? (
+            <a
+              href={DEMO_CLUB.instagram}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex w-fit items-center gap-2 text-sm text-white/80 transition-colors hover:text-accent"
+            >
+              <Instagram className="h-4 w-4" aria-hidden />
+              Seguinos en Instagram
+            </a>
+          ) : null}
         </div>
 
         <div>
@@ -63,12 +66,14 @@ export function Footer() {
                 {DEMO_CLUB.phone}
               </a>
             </li>
-            <li className="flex items-center gap-2">
-              <Mail className="h-4 w-4 shrink-0" aria-hidden />
-              <a href={`mailto:${DEMO_CLUB.email}`} className="transition-colors hover:text-accent">
-                {DEMO_CLUB.email}
-              </a>
-            </li>
+            {DEMO_CLUB.email ? (
+              <li className="flex items-center gap-2">
+                <Mail className="h-4 w-4 shrink-0" aria-hidden />
+                <a href={`mailto:${DEMO_CLUB.email}`} className="transition-colors hover:text-accent">
+                  {DEMO_CLUB.email}
+                </a>
+              </li>
+            ) : null}
           </ul>
         </div>
 
@@ -94,10 +99,12 @@ export function Footer() {
           <p>
             © {YEAR} {DEMO_CLUB.name}. Todos los derechos reservados.
           </p>
-          <p>
-            Sitio en modo demostración. Los datos comerciales, precios y pagos se configuran al conectar
-            el backend.
-          </p>
+          {env.useMocks ? (
+            <p>
+              Sitio en modo demostración. Los datos comerciales, precios y pagos se configuran al conectar
+              el backend.
+            </p>
+          ) : null}
         </div>
       </div>
     </footer>

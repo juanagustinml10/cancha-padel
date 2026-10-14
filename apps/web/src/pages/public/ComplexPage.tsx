@@ -25,12 +25,28 @@ export function ComplexPage() {
             <SectionHeading eyebrow="Sobre nosotros" title="Nuestra historia y propuesta" />
             <div className="mt-5 flex flex-col gap-4 text-sm leading-relaxed text-muted">
               <p>
-                Este texto es un contenido de demostración. Reemplazalo por la historia real del complejo,
-                su trayectoria y su propuesta de valor una vez definidos los datos comerciales.
+                Azul Padel Club es un destino vibrante para los entusiastas del pádel en Aguilares,
+                Tucumán. Ubicado estratégicamente en la intersección de la Ruta 38 y la calle Juan
+                Bautista Alberdi, el club se consolidó como un punto de referencia para la práctica
+                deportiva en la región.
               </p>
               <p>
-                El objetivo es ofrecer una experiencia de juego cómoda, con reservas simples, atención
-                personalizada y un entorno cuidado para jugadores de todos los niveles.
+                El complejo ofrece una experiencia completa, combinando la pasión por el deporte con
+                servicios complementarios de alta calidad. Los jugadores pueden disfrutar de canchas
+                diseñadas para partidos competitivos y recreativos, garantizando un nivel técnico
+                adecuado para diversas habilidades.
+              </p>
+              <p>
+                Más allá de la infraestructura deportiva, el club se destaca por su enfoque en el
+                bienestar integral: ofrece servicios de fisioterapia ideales para la recuperación
+                muscular y la prevención de lesiones, reflejando un compromiso con la salud a largo
+                plazo de sus deportistas.
+              </p>
+              <p>
+                La ubicación facilita el acceso tanto para residentes locales como para visitantes,
+                en un ambiente acogedor que fomenta la comunidad deportiva. Es un lugar ideal para
+                mejorar el juego, mantenerse activo y conectar con otros aficionados en un entorno
+                profesional y bien equipado.
               </p>
             </div>
             <ul className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -74,29 +90,33 @@ export function ComplexPage() {
                   </a>
                 </div>
               </li>
-              <li className="flex items-start gap-3">
-                <Mail className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />
-                <div>
-                  <p className="font-medium text-ink">Email</p>
-                  <a href={`mailto:${DEMO_CLUB.email}`} className="text-muted hover:text-accent">
-                    {DEMO_CLUB.email}
-                  </a>
-                </div>
-              </li>
-              <li className="flex items-start gap-3">
-                <Instagram className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />
-                <div>
-                  <p className="font-medium text-ink">Instagram</p>
-                  <a
-                    href={DEMO_CLUB.instagram}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-muted hover:text-accent"
-                  >
-                    @padelclub
-                  </a>
-                </div>
-              </li>
+              {DEMO_CLUB.email ? (
+                <li className="flex items-start gap-3">
+                  <Mail className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />
+                  <div>
+                    <p className="font-medium text-ink">Email</p>
+                    <a href={`mailto:${DEMO_CLUB.email}`} className="text-muted hover:text-accent">
+                      {DEMO_CLUB.email}
+                    </a>
+                  </div>
+                </li>
+              ) : null}
+              {DEMO_CLUB.instagram ? (
+                <li className="flex items-start gap-3">
+                  <Instagram className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />
+                  <div>
+                    <p className="font-medium text-ink">Instagram</p>
+                    <a
+                      href={DEMO_CLUB.instagram}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-muted hover:text-accent"
+                    >
+                      @azulpadelclubok
+                    </a>
+                  </div>
+                </li>
+              ) : null}
             </ul>
           </Card>
         </div>

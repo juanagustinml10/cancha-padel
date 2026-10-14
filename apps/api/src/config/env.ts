@@ -48,7 +48,7 @@ const envSchema = z
     CORS_ORIGIN: z.string().default('http://localhost:5173'),
     SESSION_TTL_HOURS: z.coerce.number().positive().default(12),
 
-    CLUB_NAME: z.string().default('PADEL CLUB'),
+    CLUB_NAME: z.string().default('Azul Padel Club'),
     BOOKING_HOLD_MINUTES: z.coerce.number().int().positive().default(20),
     DEPOSIT_MODE: z.enum(['percent', 'fixed_amount']).default('percent'),
     DEPOSIT_PERCENT: z.coerce.number().min(0).max(100).default(30),

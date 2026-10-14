@@ -23,15 +23,16 @@ export interface StaticClubContent {
 export const STATIC_CLUB_CONTENT: StaticClubContent = {
   tagline: 'Tu cancha, tu juego, tu momento.',
   description:
-    'Complejo de pádel con canchas de primer nivel, iluminación profesional y reservas online en minutos. Viví la experiencia de jugar en un espacio pensado para vos.',
-  address: 'Av. del Deporte 1234',
-  city: 'Ciudad',
-  phone: '+54 9 11 0000-0000',
-  whatsapp: '5491100000000',
-  email: 'reservas@padelclub.example',
-  mapUrl: 'https://maps.google.com',
-  instagram: 'https://instagram.com',
-  openingSummary: 'Lunes a viernes de 08:00 a 23:00 · Sábados y domingos de 09:00 a 22:00',
+    'Azul Padel Club es un destino vibrante para los entusiastas del pádel en Aguilares, Tucumán. En la intersección de la Ruta 38 y la calle Juan Bautista Alberdi, combina canchas de primer nivel, fisioterapia y un ambiente acogedor para jugadores de todos los niveles.',
+  address: 'Juan Bautista Alberdi 2344',
+  city: 'Aguilares, Tucumán',
+  phone: '+54 3865 445723',
+  whatsapp: '543865445723',
+  email: '',
+  mapUrl:
+    'https://www.google.com/maps/search/?api=1&query=Juan%20Bautista%20Alberdi%202344%2C%20Aguilares%2C%20Tucum%C3%A1n',
+  instagram: 'https://instagram.com/azulpadelclubok',
+  openingSummary: 'Todos los días de 14:00 a 00:00',
 };
 
 export const DEFAULT_FAQS = [

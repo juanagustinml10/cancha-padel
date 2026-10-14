@@ -4,7 +4,7 @@
  */
 export const env = {
   apiBaseUrl: import.meta.env.VITE_API_URL ?? '/api/v1',
-  appName: import.meta.env.VITE_APP_NAME ?? 'PADEL CLUB',
+  appName: import.meta.env.VITE_APP_NAME ?? 'Azul Padel Club',
   useMocks: (import.meta.env.VITE_USE_MOCKS ?? 'true') !== 'false',
   whatsapp: import.meta.env.VITE_WHATSAPP ?? '',
 } as const;

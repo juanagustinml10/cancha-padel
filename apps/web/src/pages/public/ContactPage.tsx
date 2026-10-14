@@ -119,12 +119,14 @@ export function ContactPage() {
                     {DEMO_CLUB.phone}
                   </a>
                 </li>
-                <li className="flex items-center gap-3">
-                  <Mail className="h-5 w-5 shrink-0 text-accent" aria-hidden />
-                  <a href={`mailto:${DEMO_CLUB.email}`} className="text-muted hover:text-accent">
-                    {DEMO_CLUB.email}
-                  </a>
-                </li>
+                {DEMO_CLUB.email ? (
+                  <li className="flex items-center gap-3">
+                    <Mail className="h-5 w-5 shrink-0 text-accent" aria-hidden />
+                    <a href={`mailto:${DEMO_CLUB.email}`} className="text-muted hover:text-accent">
+                      {DEMO_CLUB.email}
+                    </a>
+                  </li>
+                ) : null}
                 <li className="flex items-start gap-3">
                   <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />
                   <span className="text-muted">{DEMO_CLUB.openingSummary}</span>
@@ -144,13 +146,15 @@ export function ContactPage() {
             </Card>
 
             <Card className="overflow-hidden">
-              <div className="flex h-64 flex-col items-center justify-center gap-2 border-t border-line bg-surface-2 text-center">
-                <MapPin className="h-8 w-8 text-accent" aria-hidden />
-                <p className="text-sm font-medium text-content">Mapa de ubicación</p>
-                <p className="max-w-xs px-4 text-xs text-muted">
-                  El mapa real se integrará con la dirección definitiva del complejo.
-                </p>
-              </div>
+              <iframe
+                title="Mapa de ubicación"
+                className="h-64 w-full border-0"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                src={`https://www.google.com/maps?q=${encodeURIComponent(
+                  `${DEMO_CLUB.address}, ${DEMO_CLUB.city}`,
+                )}&output=embed`}
+              />
             </Card>
           </div>
         </div>
