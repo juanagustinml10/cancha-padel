@@ -249,6 +249,69 @@ export function HomePage() {
         </div>
       </section>
 
+      <section className="section container-page" id="encontranos">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-3xl font-bold text-content mb-4">Encontranos</h2>
+              <p className="text-muted mb-6">
+                Ubicados en la intersección de la Ruta 38 y la calle Juan Bautista Alberdi, en
+                Aguilares, Tucumán.
+              </p>
+
+              {/* Google Maps iframe */}
+              <div className="rounded-xl overflow-hidden shadow-elevated">
+                <iframe
+                  width="100%"
+                  height="400"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d1107.045!2d-65.615067!3d-27.443508!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f0!5e0!3m2!1ses-419!2sar"
+                />
+              </div>
+
+              {/* Cómo llegar button */}
+              <div className="mt-6">
+                <a
+                  href="https://maps.app.goo.gl/cdYusPSETdmWE5436"
+                  target="_blank"
+                  rel="noreferrer"
+                  className={buttonClasses('primary', 'md')}
+                >
+                  <Clock3 className="h-4 w-4 me-2" aria-hidden />
+                  Cómo llegar
+                </a>
+              </div>
+            </div>
+
+            {/* Dirección verificada */}
+            <div className="p-6 rounded-xl border border-line bg-surface">
+              <h3 className="font-semibold text-content mb-2">Dirección</h3>
+              <p className="text-muted">
+                Juan Bautista Alberdi 2344<br />
+                Aguilares, Tucumán, Argentina
+              </p>
+              <p className="mt-3 text-sm">
+                <a href="tel:+543865445723" className="text-accent">
+                  +54 3865 445723
+                </a>
+              </p>
+              <p className="mt-3 text-sm">
+                <a
+                  href="wa.me/543865445723"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-accent"
+                >
+                  WhatsApp
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="section container-page">
         <div className="overflow-hidden rounded-3xl border border-line bg-surface shadow-card">
           <div className="grid gap-8 p-8 sm:p-10 lg:grid-cols-2 lg:items-center">
