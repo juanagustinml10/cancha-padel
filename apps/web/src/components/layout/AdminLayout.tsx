@@ -36,7 +36,7 @@ export function AdminLayout() {
   };
 
   return (
-    <div className="flex min-h-screen bg-bg">
+    <div className="flex min-h-screen overflow-x-clip bg-bg">
       <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-line bg-night px-4 py-5 lg:flex">
         <div className="mb-6 [&_span]:text-white">
           <Logo compact />

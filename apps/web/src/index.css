@@ -20,7 +20,7 @@
   h4 {
     @apply font-display text-content;
     text-wrap: balance;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
   }
 
   :focus-visible {
@@ -53,11 +53,12 @@
 
 @layer components {
   .container-page {
-    @apply mx-auto w-full max-w-content px-4 sm:px-6 lg:px-8;
+    @apply mx-auto w-full max-w-content px-5 sm:px-6 lg:px-8;
   }
 
+  /* Ritmo vertical de secciones: 48px móvil → 64px tablet → 80px escritorio */
   .section {
-    @apply py-14 sm:py-20;
+    @apply py-12 sm:py-16 lg:py-20;
   }
 
   .eyebrow {
@@ -74,12 +75,12 @@
 
   /* Superficie con leve desenfoque para barras fijas */
   .glass-bar {
-    @apply border-line/80 bg-bg/80 backdrop-blur-xl;
+    @apply border-line/80 bg-bg/85 backdrop-blur-xl;
   }
 
   /* Texto con degradado de marca (uso puntual) */
   .text-gradient {
-    @apply bg-gradient-to-r from-white via-white to-accent bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-content via-content to-accent bg-clip-text text-transparent;
   }
 
   .subtle-scrollbar::-webkit-scrollbar {
@@ -89,6 +90,24 @@
   .subtle-scrollbar::-webkit-scrollbar-thumb {
     background-color: var(--color-border-strong);
     border-radius: var(--radius-full);
+  }
+}
+
+@layer utilities {
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .tnum {
+    font-variant-numeric: tabular-nums;
   }
 }
 

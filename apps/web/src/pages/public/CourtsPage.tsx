@@ -30,10 +30,14 @@ export function CourtsPage() {
       </PageHero>
 
       <section className="section container-page">
-        <SectionHeading eyebrow="Canchas" title="Disponibles en el complejo" />
+        <SectionHeading
+          eyebrow="Canchas"
+          title="Disponibles en el complejo"
+          description="Todas las canchas incluyen iluminación y acceso a vestuarios."
+        />
         <div className="mt-8">
           {courts.loading ? (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
               {Array.from({ length: 3 }).map((_, index) => (
                 <SkeletonCard key={index} />
               ))}
@@ -46,7 +50,7 @@ export function CourtsPage() {
               description="La disponibilidad se mostrará cuando el complejo configure sus canchas."
             />
           ) : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
               {activeCourts.map((court) => (
                 <CourtCard key={court.id} court={court} priceFromCents={lowestPrice} />
               ))}
@@ -62,7 +66,7 @@ export function CourtsPage() {
             title="Precios por franja"
             description="Valores orientativos expresados por hora. Pueden variar según cancha y duración."
           />
-          <div className="mt-6">
+          <div className="mt-8">
             {pricing.loading ? (
               <SkeletonCard />
             ) : pricing.data ? (
@@ -71,7 +75,7 @@ export function CourtsPage() {
               <ErrorState message={pricing.error ?? 'Sin datos'} onRetry={pricing.retry} />
             )}
           </div>
-          <div className="mt-6 flex items-start gap-3 rounded-2xl border border-primary/30 bg-brand-soft px-5 py-4 text-sm text-content">
+          <div className="mt-8 flex items-start gap-3 rounded-2xl border border-primary/30 bg-brand-soft px-5 py-4 text-sm text-content">
             <Info className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />
             <p>
               El precio final de tu reserva se calcula automáticamente al elegir cancha, duración y horario.

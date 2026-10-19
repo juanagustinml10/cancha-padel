@@ -8,9 +8,13 @@ const NAME_TAIL = (NAME_PARTS[NAME_PARTS.length - 1] ?? '').toUpperCase();
 
 export function Logo({ compact = false }: { compact?: boolean }) {
   return (
-    <Link to="/" className="inline-flex items-center gap-2.5" aria-label="Ir al inicio">
+    <Link
+      to="/"
+      className="group -my-1 inline-flex items-center gap-2.5 rounded-xl py-1 focus-visible:ring-2 focus-visible:ring-accent"
+      aria-label="Ir al inicio"
+    >
       <span
-        className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-white shadow-[0_8px_24px_-10px_rgba(40,120,255,0.8)]"
+        className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white shadow-glow ring-1 ring-white/10 transition-transform group-hover:-translate-y-0.5"
         aria-hidden
       >
         <svg
@@ -18,7 +22,7 @@ export function Logo({ compact = false }: { compact?: boolean }) {
           className="h-5 w-5"
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.8"
+          strokeWidth="1.9"
           strokeLinecap="round"
           strokeLinejoin="round"
         >
@@ -29,7 +33,7 @@ export function Logo({ compact = false }: { compact?: boolean }) {
       </span>
       <span
         className={cn(
-          'font-display font-extrabold tracking-tight text-content',
+          'font-display font-extrabold leading-none tracking-tight text-content',
           compact ? 'text-base' : 'text-lg',
         )}
       >

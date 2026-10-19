@@ -21,15 +21,15 @@ export function SectionHeading({
   return (
     <div
       className={cn(
-        'flex flex-col gap-3',
+        'flex max-w-2xl flex-col gap-3',
         align === 'center' && 'items-center text-center',
         className,
       )}
     >
       {eyebrow ? <span className="eyebrow">{eyebrow}</span> : null}
-      <h2 className="text-2xl font-bold text-content sm:text-3xl">{title}</h2>
+      <h2 className="text-2xl font-bold tracking-tight text-content sm:text-[1.75rem]">{title}</h2>
       {description ? (
-        <p className={cn('max-w-2xl text-base text-muted', align === 'center' && 'mx-auto')}>
+        <p className={cn('max-w-2xl text-sm text-muted', align === 'center' && 'mx-auto')}>
           {description}
         </p>
       ) : null}

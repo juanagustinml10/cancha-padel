@@ -1,21 +1,18 @@
 import { NavLink } from 'react-router-dom';
 import {
-  BarChart3,
+  LayoutDashboard,
+  TicketCheck,
   CalendarDays,
   CalendarRange,
-  CreditCard,
   Dumbbell,
-  LayoutDashboard,
+  Clock,
   Settings,
   ShieldCheck,
-  TicketCheck,
-  Users,
-  Clock,
 } from 'lucide-react';
 import type { Role } from '@padel/shared';
 import { cn } from '@/lib/utils';
 
-type Group = 'Operación' | 'Configuración' | 'Gestión' | 'Sistema';
+type Group = 'Operación' | 'Configuración' | 'Sistema';
 
 interface NavItem {
   to: string;
@@ -27,20 +24,22 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  // --- Operación: acciones del día a día ---
   { to: '/admin', label: 'Resumen', icon: <LayoutDashboard className="h-4 w-4" />, roles: ['ADMIN', 'RECEPTION'], group: 'Operación', end: true },
-  { to: '/admin/calendario', label: 'Calendario', icon: <CalendarDays className="h-4 w-4" />, roles: ['ADMIN', 'RECEPTION'], group: 'Operación' },
   { to: '/admin/reservas', label: 'Reservas', icon: <TicketCheck className="h-4 w-4" />, roles: ['ADMIN', 'RECEPTION'], group: 'Operación' },
+  { to: '/admin/calendario', label: 'Calendario', icon: <CalendarDays className="h-4 w-4" />, roles: ['ADMIN', 'RECEPTION'], group: 'Operación' },
+
+  // --- Configuración: ajustes del club ---
   { to: '/admin/canchas', label: 'Canchas', icon: <Dumbbell className="h-4 w-4" />, roles: ['ADMIN'], group: 'Configuración' },
   { to: '/admin/horarios', label: 'Horarios y bloqueos', icon: <Clock className="h-4 w-4" />, roles: ['ADMIN', 'RECEPTION'], group: 'Configuración' },
   { to: '/admin/precios', label: 'Precios', icon: <CalendarRange className="h-4 w-4" />, roles: ['ADMIN'], group: 'Configuración' },
-  { to: '/admin/clientes', label: 'Clientes', icon: <Users className="h-4 w-4" />, roles: ['ADMIN', 'RECEPTION'], group: 'Gestión' },
-  { to: '/admin/pagos', label: 'Pagos', icon: <CreditCard className="h-4 w-4" />, roles: ['ADMIN', 'RECEPTION'], group: 'Gestión' },
-  { to: '/admin/reportes', label: 'Reportes', icon: <BarChart3 className="h-4 w-4" />, roles: ['ADMIN'], group: 'Gestión' },
+  { to: '/admin/configuracion', label: 'Configuración del club', icon: <Settings className="h-4 w-4" />, roles: ['ADMIN'], group: 'Configuración' },
+
+  // --- Sistema: solo para administrador ---
   { to: '/admin/usuarios', label: 'Usuarios y permisos', icon: <ShieldCheck className="h-4 w-4" />, roles: ['ADMIN'], group: 'Sistema' },
-  { to: '/admin/configuracion', label: 'Configuración', icon: <Settings className="h-4 w-4" />, roles: ['ADMIN'], group: 'Sistema' },
 ];
 
-const GROUP_ORDER: Group[] = ['Operación', 'Configuración', 'Gestión', 'Sistema'];
+const GROUP_ORDER: Group[] = ['Operación', 'Configuración', 'Sistema'];
 
 export function AdminSidebar({ role, onNavigate }: { role: Role; onNavigate?: () => void }) {
   const items = NAV_ITEMS.filter((item) => item.roles.includes(role));

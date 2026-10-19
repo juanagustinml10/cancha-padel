@@ -21,7 +21,7 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 const mobileLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(
-    'rounded-xl px-3.5 py-3 text-sm font-medium transition-colors',
+    'rounded-xl px-4 py-3 text-sm font-medium transition-colors',
     isActive ? 'bg-brand-soft text-accent' : 'text-ink hover:bg-surface-2 hover:text-content',
   );
 
@@ -33,11 +33,21 @@ export function Header() {
     setOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onResize = () => {
+      if (window.innerWidth >= 1024) setOpen(false);
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [open]);
+
   return (
     <header className="sticky top-0 z-40 border-b border-line/70 glass-bar">
-      <div className="container-page flex h-16 items-center justify-between gap-4">
+      <div className="container-page flex h-14 items-center justify-between gap-3 sm:h-16">
         <Logo />
 
+        {/* Navegación de escritorio */}
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Navegación principal">
           {NAV_ITEMS.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.end} className={navLinkClass}>
@@ -56,6 +66,7 @@ export function Header() {
           </Link>
         </div>
 
+        {/* Acción de menú en móvil (las acciones principales viven en la barra inferior) */}
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
@@ -70,7 +81,7 @@ export function Header() {
 
       {open ? (
         <div id="mobile-menu" className="border-t border-line bg-surface lg:hidden">
-          <nav className="container-page flex flex-col gap-1 py-3" aria-label="Navegación móvil">
+          <nav className="container-page flex animate-fade-in flex-col gap-1.5 py-4" aria-label="Navegación móvil">
             {NAV_ITEMS.map((item) => (
               <NavLink key={item.to} to={item.to} end={item.end} className={mobileLinkClass}>
                 {item.label}
@@ -78,7 +89,7 @@ export function Header() {
             ))}
             <Link
               to="/admin"
-              className="rounded-xl px-3.5 py-3 text-sm font-medium text-ink transition-colors hover:bg-surface-2 hover:text-content"
+              className="rounded-xl px-4 py-3 text-sm font-medium text-ink transition-colors hover:bg-surface-2 hover:text-content"
             >
               Panel administrativo
             </Link>

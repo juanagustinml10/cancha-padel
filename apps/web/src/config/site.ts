@@ -67,12 +67,12 @@ export const DEMO_FEATURES = [
 ] as const;
 
 export const DEMO_GALLERY: GalleryImage[] = [
-  { id: 'g1', url: '', alt: 'Cancha de pádel con iluminación nocturna', sortOrder: 1 },
-  { id: 'g2', url: '', alt: 'Detalle de la red y superficie de juego', sortOrder: 2 },
-  { id: 'g3', url: '', alt: 'Zona de descanso y cantina', sortOrder: 3 },
-  { id: 'g4', url: '', alt: 'Vestuarios del complejo', sortOrder: 4 },
-  { id: 'g5', url: '', alt: 'Vista general de las canchas', sortOrder: 5 },
-  { id: 'g6', url: '', alt: 'Jugadores en pleno partido', sortOrder: 6 },
+  { id: 'g1', url: '/images/gallery-1.jpg', alt: 'Cancha de pádel', sortOrder: 1 },
+  { id: 'g2', url: '/images/gallery-2.jpg', alt: 'Cancha de pádel al aire libre', sortOrder: 2 },
+  { id: 'g3', url: '/images/gallery-3.jpg', alt: 'Jugadores en pleno partido', sortOrder: 3 },
+  { id: 'g4', url: '/images/gallery-4.jpg', alt: 'Detalle de las paredes de vidrio', sortOrder: 4 },
+  { id: 'g5', url: '/images/gallery-5.jpg', alt: 'Cancha de pádel urbana', sortOrder: 5 },
+  { id: 'g6', url: '/images/gallery-6.jpg', alt: 'Vista general de las canchas', sortOrder: 6 },
 ];
 
 export const DEMO_PROMOTIONS: Promotion[] = [

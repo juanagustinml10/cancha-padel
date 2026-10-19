@@ -15,7 +15,7 @@ function ScrollToTop() {
 
 export function PublicLayout() {
   return (
-    <div className="flex min-h-screen flex-col bg-bg">
+    <div className="flex min-h-screen flex-col overflow-x-clip bg-bg">
       <ScrollToTop />
       <DemoBanner />
       <Header />

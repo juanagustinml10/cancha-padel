@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   ArrowRight,
@@ -73,8 +73,15 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
 export function BookingPage() {
   const toast = useToast();
   const [step, setStep] = useState(0);
-  const [date, setDate] = useState(todayIso());
-  const [duration, setDuration] = useState(60);
+  const [searchParams] = useSearchParams();
+  const initialDate = searchParams.get('date');
+  const initialDuration = Number(searchParams.get('duration'));
+  const [date, setDate] = useState(
+    initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate) ? initialDate : todayIso(),
+  );
+  const [duration, setDuration] = useState(
+    DURATIONS.includes(initialDuration) ? initialDuration : 60,
+  );
   const [courtId, setCourtId] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -335,14 +342,14 @@ export function BookingPage() {
       <PageHero
         eyebrow="Reserva online"
         title="Reservá tu cancha"
-        description="Elegí fecha, duración y horario. La disponibilidad se consulta en el servidor y el precio se calcula al confirmar."
+        description="Elegí fecha, duración y horario. La disponibilidad y el precio se calculan en el servidor."
       />
 
       <section className="section container-page">
         <div className="mx-auto max-w-4xl">
           <BookingStepper steps={STEPS} current={step} />
 
-          <Card className="mt-6 p-5 sm:p-7">
+          <Card className="mt-8 p-5 sm:p-7">
             {step === 0 ? (
               <div className="flex flex-col gap-6">
                 <div>
@@ -673,8 +680,14 @@ export function BookingPage() {
               </div>
             ) : null}
 
-            <div className="mt-8 flex items-center justify-between gap-3 border-t border-border pt-6">
-              <Button variant="outline" onClick={goBack} disabled={step === 0} leftIcon={<ArrowLeft className="h-4 w-4" />}>
+            <div className="mt-6 flex flex-col-reverse gap-3 border-t border-line pt-5 sm:mt-8 sm:flex-row sm:items-center sm:justify-between sm:pt-6">
+              <Button
+                variant="outline"
+                onClick={goBack}
+                disabled={step === 0}
+                leftIcon={<ArrowLeft className="h-4 w-4" />}
+                className="w-full sm:w-auto"
+              >
                 Atrás
               </Button>
 
@@ -683,6 +696,7 @@ export function BookingPage() {
                   onClick={goNext}
                   disabled={step === 1 && !selectedSlot}
                   rightIcon={<ArrowRight className="h-4 w-4" />}
+                  className="w-full sm:w-auto"
                 >
                   Continuar
                 </Button>
@@ -691,6 +705,7 @@ export function BookingPage() {
                   onClick={handleConfirmPayment}
                   loading={submitting}
                   leftIcon={<CalendarCheck className="h-4 w-4" />}
+                  className="w-full sm:w-auto"
                 >
                   {offline ? 'Confirmar reserva' : 'Continuar al pago'}
                 </Button>

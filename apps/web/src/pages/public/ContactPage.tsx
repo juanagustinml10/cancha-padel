@@ -50,7 +50,7 @@ export function ContactPage() {
       />
 
       <section className="section container-page">
-        <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr]">
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:gap-8">
           <Card className="p-6 sm:p-8">
             <h2 className="text-lg font-semibold text-content">Enviar consulta</h2>
             <p className="mt-1 text-sm text-muted">
@@ -103,7 +103,7 @@ export function ContactPage() {
             </form>
           </Card>
 
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-5">
             <Card className="p-6">
               <h2 className="text-base font-semibold text-content">Datos del complejo</h2>
               <ul className="mt-4 flex flex-col gap-4 text-sm">
@@ -115,14 +115,14 @@ export function ContactPage() {
                 </li>
                 <li className="flex items-center gap-3">
                   <Phone className="h-5 w-5 shrink-0 text-accent" aria-hidden />
-                  <a href={`tel:${DEMO_CLUB.phone}`} className="text-muted hover:text-accent">
+                  <a href={`tel:${DEMO_CLUB.phone}`} className="inline-block py-1 text-muted hover:text-accent">
                     {DEMO_CLUB.phone}
                   </a>
                 </li>
                 {DEMO_CLUB.email ? (
                   <li className="flex items-center gap-3">
                     <Mail className="h-5 w-5 shrink-0 text-accent" aria-hidden />
-                    <a href={`mailto:${DEMO_CLUB.email}`} className="text-muted hover:text-accent">
+                    <a href={`mailto:${DEMO_CLUB.email}`} className="inline-block py-1 text-muted hover:text-accent">
                       {DEMO_CLUB.email}
                     </a>
                   </li>

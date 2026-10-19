@@ -19,22 +19,11 @@ export function TimeSlotPicker({ slots, value, onChange }: TimeSlotPickerProps) 
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded border border-line bg-surface-2" aria-hidden />
-          Disponible
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded bg-primary" aria-hidden />
-          Seleccionado
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded border border-line bg-bg" aria-hidden />
-          Ocupado
-        </span>
-      </div>
+      <p className="text-xs text-muted">
+        Tocá un horario disponible para seleccionarlo. Los horarios ocupados no se pueden elegir.
+      </p>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
         {slots.map((slot) => {
           const selected = slot.startsAt === value;
           const disabled = !slot.available;
@@ -45,21 +34,25 @@ export function TimeSlotPicker({ slots, value, onChange }: TimeSlotPickerProps) 
               disabled={disabled}
               onClick={() => onChange(slot)}
               aria-pressed={selected}
+              aria-label={`${formatTime(slot.startsAt)} ${
+                disabled ? 'ocupado' : `disponible, seña ${formatCurrency(slot.depositAmountCents, slot.currency)}`
+              }`}
               className={cn(
-                'flex flex-col items-center rounded-xl border px-3 py-2.5 text-sm transition-colors',
-                selected && 'border-primary bg-primary text-white shadow-[0_10px_24px_-12px_rgba(40,120,255,0.9)]',
-                !selected && !disabled && 'border-line bg-surface text-ink hover:border-primary/50 hover:bg-surface-2',
-                disabled && 'cursor-not-allowed border-line bg-bg text-muted/50',
+                'flex min-h-[3.25rem] flex-col items-center justify-center rounded-xl border px-2 py-2 transition-colors',
+                selected && 'border-primary bg-primary text-white',
+                !selected && !disabled && 'border-line bg-surface text-ink hover:border-primary/60 hover:bg-surface-2',
+                disabled && 'cursor-not-allowed border-line/60 bg-bg text-muted/50 line-through',
               )}
             >
-              <span className="font-semibold">{formatTime(slot.startsAt)}</span>
-              {disabled ? (
-                <span className="text-[11px]">{slot.reason === 'past' ? 'Pasó' : 'Ocupado'}</span>
-              ) : (
-                <span className={cn('text-[11px]', selected ? 'text-white/80' : 'text-muted')}>
-                  {formatCurrency(slot.priceTotalCents, slot.currency)}
-                </span>
-              )}
+              <span className="text-sm font-semibold tnum">{formatTime(slot.startsAt)}</span>
+              <span
+                className={cn(
+                  'text-[10px]',
+                  selected ? 'text-white/80' : disabled ? 'text-muted/60' : 'text-muted',
+                )}
+              >
+                {disabled ? 'Ocupado' : formatCurrency(slot.depositAmountCents, slot.currency)}
+              </span>
             </button>
           );
         })}

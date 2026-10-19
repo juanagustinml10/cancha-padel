@@ -4,9 +4,15 @@ import { PageHero } from '@/components/site/PageHero';
 import { SectionHeading } from '@/components/ui/SectionHeading';
 import { Card } from '@/components/ui/Card';
 import { buttonClasses } from '@/components/ui/Button';
+import { GalleryGrid } from '@/components/site/GalleryAndPricing';
+import { useAsync } from '@/hooks/useAsync';
+import { publicApi } from '@/services/publicApi';
 import { DEMO_CLUB, DEMO_FEATURES, DEMO_SERVICES } from '@/config/site';
 
 export function ComplexPage() {
+  const gallery = useAsync(() => publicApi.getGallery(), []);
+  const galleryImages = gallery.data ?? [];
+
   return (
     <div>
       <PageHero
@@ -85,7 +91,7 @@ export function ComplexPage() {
                 <Phone className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />
                 <div>
                   <p className="font-medium text-ink">Teléfono</p>
-                  <a href={`tel:${DEMO_CLUB.phone}`} className="text-muted hover:text-accent">
+                  <a href={`tel:${DEMO_CLUB.phone}`} className="inline-block py-1 text-muted hover:text-accent">
                     {DEMO_CLUB.phone}
                   </a>
                 </div>
@@ -95,7 +101,7 @@ export function ComplexPage() {
                   <Mail className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />
                   <div>
                     <p className="font-medium text-ink">Email</p>
-                    <a href={`mailto:${DEMO_CLUB.email}`} className="text-muted hover:text-accent">
+                    <a href={`mailto:${DEMO_CLUB.email}`} className="inline-block py-1 text-muted hover:text-accent">
                       {DEMO_CLUB.email}
                     </a>
                   </div>
@@ -110,7 +116,7 @@ export function ComplexPage() {
                       href={DEMO_CLUB.instagram}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-muted hover:text-accent"
+                      className="inline-block py-1 text-muted hover:text-accent"
                     >
                       @azulpadelclubok
                     </a>
@@ -125,16 +131,29 @@ export function ComplexPage() {
       <section className="section border-y border-line bg-surface/30">
         <div className="container-page">
           <SectionHeading eyebrow="Servicios" title="Qué ofrecemos" align="center" />
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
             {DEMO_SERVICES.map((service) => (
-              <Card key={service.id} className="p-5">
+              <Card key={service.id} className="p-6">
                 <h3 className="text-base font-semibold text-content">{service.title}</h3>
-                <p className="mt-1.5 text-sm text-muted">{service.description}</p>
+                <p className="mt-2 text-sm leading-relaxed text-muted">{service.description}</p>
               </Card>
             ))}
           </div>
         </div>
       </section>
+
+      {galleryImages.length > 0 ? (
+        <section className="section container-page">
+          <SectionHeading
+            eyebrow="Galería"
+            title="Así se vive el club"
+            description="Imágenes de referencia del complejo, las canchas y el juego."
+          />
+          <div className="mt-8">
+            <GalleryGrid images={galleryImages} />
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -6,50 +6,50 @@ const config: Config = {
     extend: {
       colors: {
         /* Superficies */
-        bg: '#080D18',
+        bg: '#070B14',
         surface: {
-          DEFAULT: '#101A2B',
-          2: '#17243A',
+          DEFAULT: '#0D1526',
+          2: '#14203A',
         },
-        night: '#0A1020',
+        night: '#05080F',
 
         /* Texto */
-        content: '#F8FAFC',
-        ink: '#CBD5E1',
-        muted: '#A7B4C8',
+        content: '#F6F9FF',
+        ink: '#C9D4E6',
+        muted: '#8A97AE',
 
         /* Marca */
         brand: {
-          DEFAULT: '#2878FF',
-          hover: '#1F66DB',
-          bright: '#53A1FF',
-          soft: 'rgba(40, 120, 255, 0.12)',
+          DEFAULT: '#2E6BFF',
+          hover: '#1B52E6',
+          bright: '#4D9BFF',
+          soft: 'rgba(46, 107, 255, 0.14)',
         },
 
         /* Bordes */
         line: {
-          DEFAULT: '#27364C',
-          strong: '#33455E',
+          DEFAULT: '#1E2B44',
+          strong: '#2E405F',
         },
 
-        /* Alias heredados (re-tematizados a la paleta oscura) */
-        white: '#F8FAFC',
-        navy: '#F8FAFC',
+        /* Alias heredados (mismos valores que la marca) */
+        white: '#F6F9FF',
+        navy: '#F6F9FF',
         primary: {
-          DEFAULT: '#2878FF',
-          hover: '#1F66DB',
-          soft: 'rgba(40, 120, 255, 0.12)',
+          DEFAULT: '#2E6BFF',
+          hover: '#1B52E6',
+          soft: 'rgba(46, 107, 255, 0.14)',
         },
         accent: {
-          DEFAULT: '#53A1FF',
-          hover: '#2E7FF0',
+          DEFAULT: '#4D9BFF',
+          hover: '#2E6BFF',
         },
         blue: {
-          50: 'rgba(40, 120, 255, 0.10)',
+          50: 'rgba(46, 107, 255, 0.10)',
         },
         border: {
-          DEFAULT: '#27364C',
-          strong: '#33455E',
+          DEFAULT: '#1E2B44',
+          strong: '#2E405F',
         },
 
         /* Semánticos */
@@ -66,8 +66,8 @@ const config: Config = {
           soft: 'rgba(248, 113, 113, 0.14)',
         },
         info: {
-          DEFAULT: '#53A1FF',
-          soft: 'rgba(83, 161, 255, 0.14)',
+          DEFAULT: '#4D9BFF',
+          soft: 'rgba(77, 155, 255, 0.14)',
         },
       },
       fontFamily: {
@@ -75,10 +75,10 @@ const config: Config = {
         display: ['Sora', 'Inter', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
       },
       boxShadow: {
-        card: '0 1px 2px rgba(0, 0, 0, 0.45), 0 10px 30px -18px rgba(0, 0, 0, 0.7)',
-        elevated: '0 24px 60px -24px rgba(0, 0, 0, 0.8)',
-        focus: '0 0 0 3px rgba(83, 161, 255, 0.35)',
-        glow: '0 0 0 1px rgba(40, 120, 255, 0.35), 0 16px 46px -16px rgba(40, 120, 255, 0.5)',
+        card: '0 1px 0 rgba(255,255,255,0.02), 0 10px 30px -22px rgba(0,0,0,0.9)',
+        elevated: '0 24px 60px -28px rgba(0,0,0,0.95)',
+        focus: '0 0 0 3px rgba(46, 107, 255, 0.35)',
+        glow: '0 18px 50px -20px rgba(46, 107, 255, 0.55)',
       },
       borderRadius: {
         xl: '0.875rem',
@@ -86,7 +86,7 @@ const config: Config = {
         '3xl': '1.5rem',
       },
       maxWidth: {
-        content: '1200px',
+        content: '1240px',
       },
       keyframes: {
         'fade-in-up': {
@@ -104,11 +104,16 @@ const config: Config = {
         shimmer: {
           '100%': { transform: 'translateX(100%)' },
         },
+        'slide-up': {
+          '0%': { opacity: '0', transform: 'translateY(100%)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
         'fade-in-up': 'fade-in-up 0.35s ease-out both',
         'fade-in': 'fade-in 0.25s ease-out both',
         'scale-in': 'scale-in 0.18s ease-out both',
+        'slide-up': 'slide-up 0.28s cubic-bezier(0.16, 1, 0.3, 1) both',
       },
       transitionDuration: {
         DEFAULT: '150ms',

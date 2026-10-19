@@ -1,352 +1,214 @@
 import { Link } from 'react-router-dom';
-import {
-  CalendarCheck,
-  Clock3,
-  MapPin,
-  ShieldCheck,
-  Sparkles,
-  Ticket,
-  Trophy,
-  Users,
-  Wifi,
-} from 'lucide-react';
-import { SectionHeading } from '@/components/ui/SectionHeading';
-import { buttonClasses } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { Card } from '@/components/ui/Card';
-import { SkeletonCard } from '@/components/ui/Skeleton';
-import { ErrorState } from '@/components/ui/States';
-import { CourtArt } from '@/components/site/CourtArt';
-import { CourtCard } from '@/components/site/CourtCard';
-import { PriceTable } from '@/components/site/GalleryAndPricing';
-import { GalleryGrid } from '@/components/site/GalleryAndPricing';
-import { FaqAccordion } from '@/components/site/FaqAccordion';
+import { ArrowRight, CalendarCheck, Clock, MapPin, MessageCircle, Navigation, Phone } from 'lucide-react';
 import { useAsync } from '@/hooks/useAsync';
 import { publicApi } from '@/services/publicApi';
-import { DEMO_CLUB, DEMO_FEATURES, DEMO_SERVICES } from '@/config/site';
-
-const SERVICE_ICONS = [
-  <Trophy className="h-5 w-5" key="trophy" aria-hidden />,
-  <CalendarCheck className="h-5 w-5" key="calendar" aria-hidden />,
-  <Users className="h-5 w-5" key="users" aria-hidden />,
-  <Sparkles className="h-5 w-5" key="sparkles" aria-hidden />,
-];
+import { DEMO_CLUB, DEMO_SERVICES } from '@/config/site';
+import { buttonClasses } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { SectionHeading } from '@/components/ui/SectionHeading';
+import { CourtCard } from '@/components/site/CourtCard';
 
 export function HomePage() {
   const courts = useAsync(() => publicApi.getCourts(), []);
   const pricing = useAsync(() => publicApi.getPricingDisplay(), []);
-  const promotions = useAsync(() => publicApi.getPromotions(), []);
-  const gallery = useAsync(() => publicApi.getGallery(), []);
-  const faqs = useAsync(() => publicApi.getFaqs(), []);
 
   const activeCourts = (courts.data ?? []).filter((court) => court.status === 'ACTIVE');
-  const lowestPrice = pricing.data
-    ?.map((row) => row.priceCents)
-    .sort((a, b) => a - b)[0];
+  const lowestPrice = pricing.data?.map((row) => row.priceCents).sort((a, b) => a - b)[0];
 
   return (
     <div>
-      <section className="relative overflow-hidden border-b border-line bg-night">
+      {/* ================= PORTADA ================= */}
+      <section className="relative isolate overflow-hidden border-b border-line bg-night">
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-24 -top-32 h-80 w-80 rounded-full bg-primary/25 blur-3xl"
+          className="pointer-events-none absolute -right-32 -top-40 h-80 w-80 rounded-full bg-primary/20 blur-3xl"
         />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -left-24 bottom-[-8rem] h-80 w-80 rounded-full bg-accent/10 blur-3xl"
-        />
-        <div className="container-page relative grid items-center gap-12 py-16 lg:grid-cols-2 lg:py-24">
-          <div className="animate-fade-in-up">
-            <Badge variant="info">
-              <Sparkles className="h-3.5 w-3.5" aria-hidden />
-              Reservas online con seña segura
-            </Badge>
-            <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight text-content sm:text-5xl lg:text-6xl">
-              {DEMO_CLUB.tagline}
+
+        <div className="container-page relative grid items-center gap-10 py-12 sm:py-16 lg:grid-cols-[1.05fr_1fr] lg:gap-14 lg:py-24">
+          <div className="relative z-10 max-w-xl animate-fade-in-up">
+            <span className="eyebrow">{DEMO_CLUB.tagline}</span>
+            <h1 className="mt-4 text-[2.125rem] font-extrabold leading-[1.08] tracking-tight text-content sm:text-5xl">
+              Tu cancha de pádel, lista en minutos
             </h1>
-            <p className="mt-5 max-w-xl text-base text-muted sm:text-lg">{DEMO_CLUB.description}</p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/reservar" className={buttonClasses('primary', 'lg')}>
+            <p className="mt-5 max-w-md text-base leading-relaxed text-ink/90">
+              Reservá online en {DEMO_CLUB.name}, {DEMO_CLUB.city}. Elegí día, horario y cancha, y
+              confirmá con la seña.
+            </p>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link to="/reservar" className={buttonClasses('primary', 'lg', 'w-full sm:w-auto')}>
                 <CalendarCheck className="h-5 w-5" aria-hidden />
                 Reservar cancha
               </Link>
-              <Link to="/canchas" className={buttonClasses('outline', 'lg')}>
+              <Link to="/canchas" className={buttonClasses('outline', 'lg', 'w-full sm:w-auto')}>
                 Ver canchas y precios
               </Link>
             </div>
-            <ul className="mt-8 flex flex-wrap gap-2 text-sm text-muted">
-              <li className="inline-flex items-center gap-2 rounded-full border border-line bg-surface/70 px-3 py-1.5">
-                <Clock3 className="h-4 w-4 text-accent" aria-hidden />
-                {DEMO_CLUB.openingSummary}
-              </li>
-              <li className="inline-flex items-center gap-2 rounded-full border border-line bg-surface/70 px-3 py-1.5">
-                <MapPin className="h-4 w-4 text-accent" aria-hidden />
-                {DEMO_CLUB.address}, {DEMO_CLUB.city}
-              </li>
-              <li className="inline-flex items-center gap-2 rounded-full border border-line bg-surface/70 px-3 py-1.5">
-                <ShieldCheck className="h-4 w-4 text-accent" aria-hidden />
-                Pago de seña online
-              </li>
-            </ul>
+
+            <p className="mt-6 inline-flex items-center gap-2 text-sm text-muted">
+              <Clock className="h-4 w-4 text-accent" aria-hidden />
+              {DEMO_CLUB.openingSummary}
+            </p>
           </div>
 
-          <div className="relative animate-fade-in">
+          {/* Foto del club integrada a la portada: a sangre en móvil y como fondo lateral en escritorio */}
+          <div className="relative z-0 -mx-5 -mb-12 animate-fade-in sm:-mx-6 sm:-mb-16 lg:absolute lg:inset-y-0 lg:right-[calc((100vw_-_100%)/-2)] lg:mx-0 lg:mb-0 lg:w-[50vw] lg:animate-none">
+            <img
+              src="/images/hero.jpg"
+              alt="Jugadores disputando un partido de pádel"
+              className="h-60 w-full object-cover object-center sm:h-72 lg:h-full [mask-image:linear-gradient(to_bottom,transparent,black_14%)] lg:[mask-image:linear-gradient(to_right,transparent,black_30%)]"
+            />
             <div
               aria-hidden
-              className="absolute inset-0 -z-10 translate-y-4 scale-[0.97] rounded-3xl bg-primary/20 blur-2xl"
+              className="absolute inset-0 bg-gradient-to-t from-night via-night/5 to-night/25 lg:bg-gradient-to-b lg:from-night/50 lg:via-transparent lg:to-night/30"
             />
-            <div className="overflow-hidden rounded-3xl border border-line shadow-elevated">
-              <div className="h-72 sm:h-96">
-                <CourtArt variant="night" />
-              </div>
-            </div>
-            <Card className="absolute -bottom-5 left-4 hidden w-60 p-4 shadow-elevated sm:block">
-              <p className="text-xs font-semibold uppercase tracking-wide text-accent">Reservá en minutos</p>
-              <p className="mt-1 text-sm text-ink">
-                Elegí día, cancha y horario. Confirmá con la seña online.
-              </p>
-            </Card>
+            <div aria-hidden className="absolute inset-0 bg-primary/10 mix-blend-overlay" />
+            <p className="absolute bottom-4 left-5 text-xs font-semibold uppercase tracking-[0.16em] text-white/70 lg:bottom-8 lg:left-auto lg:right-8">
+              {DEMO_CLUB.city}
+            </p>
           </div>
         </div>
       </section>
 
-      <section className="section container-page">
-        <SectionHeading
-          eyebrow="Servicios"
-          title="Todo lo que necesitás para jugar"
-          description="Un complejo pensado para que solo te preocupes por el partido."
-        />
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {DEMO_SERVICES.map((service, index) => (
-            <Card key={service.id} className="p-5 transition-colors hover:border-line-strong">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-line bg-brand-soft text-accent">
-                {SERVICE_ICONS[index]}
-              </span>
-              <h3 className="mt-4 text-base font-semibold text-content">{service.title}</h3>
-              <p className="mt-1.5 text-sm text-muted">{service.description}</p>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section className="section border-y border-line bg-surface/30">
-        <div className="container-page">
+      {/* ================= CANCHAS ================= */}
+      {activeCourts.length > 0 ? (
+        <section className="section container-page">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <SectionHeading
               eyebrow="Canchas"
-              title="Nuestras canchas"
-              description="Canchas con superficie profesional y condiciones para jugar durante todo el año."
+              title="Elegí la tuya"
+              description="Canchas indoor y outdoor con iluminación profesional, listas para jugar."
             />
-            <Link to="/canchas" className={buttonClasses('outline', 'sm')}>
+            <Link
+              to="/canchas"
+              className="-my-2.5 inline-flex shrink-0 items-center gap-1 py-2.5 text-sm font-semibold text-accent transition-colors hover:text-accent-hover"
+            >
               Ver todas
+              <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
           </div>
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {courts.loading
-              ? Array.from({ length: 3 }).map((_, index) => <SkeletonCard key={index} />)
-              : activeCourts
-                  .slice(0, 3)
-                  .map((court) => <CourtCard key={court.id} court={court} priceFromCents={lowestPrice} />)}
-          </div>
-          {courts.error ? <ErrorState message={courts.error} onRetry={courts.retry} /> : null}
-        </div>
-      </section>
 
-      <section className="section container-page">
-        <div className="grid gap-10 lg:grid-cols-2 lg:items-start">
-          <div>
-            <SectionHeading
-              eyebrow="Precios"
-              title="Horarios y tarifas"
-              description="Tarifas orientativas por franja. El precio definitivo se calcula en la reserva según cancha, duración y horario."
-            />
-            <div className="mt-6">
-              {pricing.loading ? (
-                <SkeletonCard />
-              ) : pricing.data ? (
-                <PriceTable rows={pricing.data} />
-              ) : (
-                <ErrorState message={pricing.error ?? 'Sin datos de precios'} onRetry={pricing.retry} />
-              )}
-            </div>
+          <div className="-mx-5 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
+            {activeCourts.slice(0, 3).map((court) => (
+              <div key={court.id} className="w-[82%] shrink-0 snap-start sm:w-auto">
+                <CourtCard court={court} priceFromCents={lowestPrice} ctaHref="/reservar" />
+              </div>
+            ))}
           </div>
-          <div>
-            <SectionHeading eyebrow="Instalaciones" title="Comodidades del complejo" />
-            <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-              {(DEMO_FEATURES as readonly string[]).map((feature) => (
-                <li
-                  key={feature}
-                  className="flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3 text-sm text-ink"
-                >
-                  <Wifi className="h-4 w-4 shrink-0 text-accent" aria-hidden />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
 
-      {promotions.data && promotions.data.length > 0 ? (
-        <section className="section bg-night">
-          <div className="container-page">
-            <SectionHeading
-              eyebrow="Promociones"
-              title="Beneficios vigentes"
-              description="Promociones configurables por el complejo. Consultá las condiciones al reservar."
-              className="[&_h2]:text-white [&_p]:text-white/70"
-            />
-            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {promotions.data.map((promo) => (
-                <div key={promo.id} className="rounded-2xl bg-surface/5 p-5 text-white ring-1 ring-white/10">
-                  {promo.badge ? (
-                    <span className="inline-flex rounded-full bg-accent px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-[#041018]">
-                      {promo.badge}
-                    </span>
-                  ) : null}
-                  <h3 className="mt-3 text-lg font-semibold text-white">{promo.title}</h3>
-                  <p className="mt-1.5 text-sm text-white/70">{promo.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          {activeCourts.length > 1 ? (
+            <p className="mt-3 text-center text-xs text-muted sm:hidden">
+              Deslizá para ver más canchas
+            </p>
+          ) : null}
         </section>
       ) : null}
 
-      <section className="section container-page">
-        <SectionHeading eyebrow="Galería" title="Conocé el complejo" align="center" />
-        <div className="mt-8">
-          {gallery.loading ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="aspect-[4/3] animate-pulse rounded-2xl bg-surface-2" />
-              ))}
-            </div>
-          ) : gallery.data ? (
-            <GalleryGrid images={gallery.data} />
-          ) : (
-            <ErrorState message={gallery.error ?? 'Sin imágenes'} onRetry={gallery.retry} />
-          )}
-        </div>
-      </section>
-
+      {/* ================= EL COMPLEJO ================= */}
       <section className="section border-y border-line bg-surface/30">
-        <div className="container-page grid gap-10 lg:grid-cols-[1fr_1.2fr] lg:items-start">
+        <div className="container-page">
           <SectionHeading
-            eyebrow="Preguntas frecuentes"
-            title="Respuestas rápidas"
-            description="¿No encontrás lo que buscás? Escribinos por WhatsApp y te ayudamos."
+            eyebrow="El complejo"
+            title="Mucho más que canchas"
+            description="Un espacio pensado para jugar, recuperarse y compartir."
           />
-          <div>
-            {faqs.loading ? (
-              <SkeletonCard />
-            ) : faqs.data ? (
-              <FaqAccordion items={faqs.data} />
-            ) : (
-              <ErrorState message={faqs.error ?? 'Sin preguntas'} onRetry={faqs.retry} />
-            )}
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
+            {DEMO_SERVICES.map((service) => (
+              <Card key={service.id} className="p-6">
+                <h3 className="text-base font-semibold text-content">{service.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted">{service.description}</p>
+              </Card>
+            ))}
+          </div>
+          <div className="mt-8">
+            <Link
+              to="/complejo"
+              className="-my-2.5 inline-flex items-center gap-1 py-2.5 text-sm font-semibold text-accent transition-colors hover:text-accent-hover"
+            >
+              Conocé el complejo
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
           </div>
         </div>
       </section>
 
-      <section className="section container-page" id="encontranos">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-3xl font-bold text-content mb-4">Encontranos</h2>
-              <p className="text-muted mb-6">
-                Ubicados en la intersección de la Ruta 38 y la calle Juan Bautista Alberdi, en
-                Aguilares, Tucumán.
-              </p>
-
-              {/* Google Maps iframe */}
-              <div className="rounded-xl overflow-hidden shadow-elevated">
-                <iframe
-                  width="100%"
-                  height="400"
-                  style={{ border: 0 }}
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d1107.045!2d-65.615067!3d-27.443508!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f0!5e0!3m2!1ses-419!2sar"
-                />
+      {/* ================= UBICACIÓN Y CONTACTO ================= */}
+      <section className="section container-page">
+        <div className="grid gap-5 sm:gap-6 lg:grid-cols-2">
+          <Card className="flex flex-col gap-5 p-6 sm:p-7">
+            <h2 className="inline-flex items-center gap-2.5 text-lg font-semibold text-content">
+              <MapPin className="h-5 w-5 text-accent" aria-hidden />
+              Ubicación y horarios
+            </h2>
+            <dl className="flex flex-col gap-4 text-sm">
+              <div>
+                <dt className="text-muted">Dirección</dt>
+                <dd className="mt-1 font-medium text-ink">
+                  {DEMO_CLUB.address}, {DEMO_CLUB.city}
+                </dd>
               </div>
-
-              {/* Cómo llegar button */}
-              <div className="mt-6">
-                <a
-                  href="https://maps.app.goo.gl/cdYusPSETdmWE5436"
-                  target="_blank"
-                  rel="noreferrer"
-                  className={buttonClasses('primary', 'md')}
-                >
-                  <Clock3 className="h-4 w-4 me-2" aria-hidden />
-                  Cómo llegar
-                </a>
+              <div>
+                <dt className="text-muted">Horarios</dt>
+                <dd className="mt-1 font-medium text-ink">{DEMO_CLUB.openingSummary}</dd>
               </div>
+            </dl>
+            <div className="mt-auto pt-2">
+              <a
+                href={DEMO_CLUB.mapUrl}
+                target="_blank"
+                rel="noreferrer"
+                className={buttonClasses('outline', 'md', 'w-full sm:w-fit')}
+              >
+                <Navigation className="h-4 w-4" aria-hidden />
+                Cómo llegar
+              </a>
             </div>
+          </Card>
 
-            {/* Dirección verificada */}
-            <div className="p-6 rounded-xl border border-line bg-surface">
-              <h3 className="font-semibold text-content mb-2">Dirección</h3>
-              <p className="text-muted">
-                Juan Bautista Alberdi 2344<br />
-                Aguilares, Tucumán, Argentina
-              </p>
-              <p className="mt-3 text-sm">
-                <a href="tel:+543865445723" className="text-accent">
-                  +54 3865 445723
-                </a>
-              </p>
-              <p className="mt-3 text-sm">
+          <Card className="flex flex-col gap-5 p-6 sm:p-7">
+            <h2 className="inline-flex items-center gap-2.5 text-lg font-semibold text-content">
+              <MessageCircle className="h-5 w-5 text-accent" aria-hidden />
+              ¿Consultas?
+            </h2>
+            <div className="flex flex-col gap-3 text-sm">
+              <a
+                href={`tel:${DEMO_CLUB.phone}`}
+                className="inline-flex items-center gap-2 py-1 font-medium text-ink transition-colors hover:text-accent"
+              >
+                <Phone className="h-4 w-4 text-accent" aria-hidden />
+                {DEMO_CLUB.phone}
+              </a>
+              {DEMO_CLUB.instagram ? (
                 <a
-                  href="wa.me/543865445723"
+                  href={DEMO_CLUB.instagram}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-accent"
+                  className="inline-flex items-center gap-2 py-1 font-medium text-ink transition-colors hover:text-accent"
                 >
+                  @azulpadelclubok
+                </a>
+              ) : null}
+              <p className="pt-1 text-muted">
+                Te ayudamos con reservas, clases y torneos por WhatsApp o teléfono.
+              </p>
+            </div>
+            <div className="mt-auto flex flex-col gap-3 pt-2 sm:flex-row">
+              {DEMO_CLUB.whatsapp ? (
+                <a
+                  href={`https://wa.me/${DEMO_CLUB.whatsapp}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={buttonClasses('accent', 'md', 'w-full sm:w-fit')}
+                >
+                  <MessageCircle className="h-4 w-4" aria-hidden />
                   WhatsApp
                 </a>
-              </p>
+              ) : null}
+              <Link to="/contacto" className={buttonClasses('outline', 'md', 'w-full sm:w-fit')}>
+                Contacto
+              </Link>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="section container-page">
-        <div className="overflow-hidden rounded-3xl border border-line bg-surface shadow-card">
-          <div className="grid gap-8 p-8 sm:p-10 lg:grid-cols-2 lg:items-center">
-            <div>
-              <span className="eyebrow">Ubicación y contacto</span>
-              <h2 className="mt-3 text-2xl font-bold text-content sm:text-3xl">Te esperamos en el club</h2>
-              <ul className="mt-5 flex flex-col gap-3 text-sm text-ink">
-                <li className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-accent" aria-hidden />
-                  {DEMO_CLUB.address}, {DEMO_CLUB.city}
-                </li>
-                <li className="flex items-center gap-2">
-                  <Clock3 className="h-4 w-4 text-accent" aria-hidden />
-                  {DEMO_CLUB.openingSummary}
-                </li>
-                <li className="flex items-center gap-2">
-                  <Ticket className="h-4 w-4 text-accent" aria-hidden />
-                  Reservas online las 24 horas
-                </li>
-              </ul>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link to="/reservar" className={buttonClasses('primary', 'md')}>
-                  Reservar cancha
-                </Link>
-                <Link to="/contacto" className={buttonClasses('outline', 'md')}>
-                  Contacto
-                </Link>
-              </div>
-            </div>
-            <div className="overflow-hidden rounded-2xl border border-line">
-              <div className="h-56">
-                <CourtArt variant="outdoor" />
-              </div>
-            </div>
-          </div>
+          </Card>
         </div>
       </section>
     </div>
