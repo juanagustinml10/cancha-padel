@@ -8,7 +8,7 @@ import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
-import { SectionHeading } from '@/components/ui/SectionHeading';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { FullPageLoader } from '@/components/ui/Spinner';
 import { ErrorState } from '@/components/ui/States';
 import { useAsync } from '@/hooks/useAsync';
@@ -96,7 +96,7 @@ export function AdminSettingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <SectionHeading
+      <AdminPageHeader
         eyebrow="Configuración"
         title="Parámetros del club"
         description="Define la seña, el tiempo de retención de turnos y la política de cancelación."

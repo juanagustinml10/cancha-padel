@@ -1,8 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CalendarPlus, Search } from 'lucide-react';
+import { CalendarPlus, Check, Search } from 'lucide-react';
 import type { Booking } from '@padel/shared';
-import { manualBookingSchema } from '@padel/shared';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -12,17 +11,16 @@ import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { SectionHeading } from '@/components/ui/SectionHeading';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { ManualBookingModal } from '@/components/admin/ManualBookingModal';
 import { DataTable, type Column } from '@/components/admin/DataTable';
 import { Pagination } from '@/components/ui/Pagination';
 import { EmptyState, ErrorState } from '@/components/ui/States';
 import { useAsync } from '@/hooks/useAsync';
 import { useDebounce } from '@/hooks/useDebounce';
-import { useZodForm } from '@/hooks/useZodForm';
 import { adminApi } from '@/services/adminApi';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/lib/errors';
-import { clubDateTimeToIso, todayIso } from '@/lib/datetime';
 import { formatCurrency, formatDateShort, formatDuration, formatTime } from '@/lib/format';
 import { bookingStatusLabel, bookingStatusVariant, paymentMethodLabel } from '@/lib/status';
 import { BOOKING_PAYMENT_METHOD_LABELS, BOOKING_STATUS_LABELS } from '@padel/shared';
@@ -67,17 +65,7 @@ export function AdminBookingsPage() {
   const [notesValue, setNotesValue] = useState('');
   const [notesLoading, setNotesLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-
-  const manual = useZodForm(manualBookingSchema, {
-    courtId: '',
-    date: todayIso(),
-    startTime: '19:00',
-    durationMinutes: 60,
-    fullName: '',
-    email: '',
-    phone: '',
-    notes: '',
-  });
+  const retryBookings = bookings.retry;
 
   const resetFilters = () => {
     setSearch('');
@@ -90,44 +78,22 @@ export function AdminBookingsPage() {
     setSearchParams({});
   };
 
-  const handleManualSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const data = manual.validate();
-    if (!data) return;
-    try {
-      await adminApi.createManualBooking({
-        courtId: data.courtId,
-        startsAt: clubDateTimeToIso(data.date, data.startTime),
-        durationMinutes: Number(data.durationMinutes),
-        customer: { fullName: data.fullName, email: data.email, phone: data.phone },
-        notes: data.notes || undefined,
-      });
-      toast.success('Reserva registrada', 'La reserva manual bloquea la disponibilidad.');
-      setManualOpen(false);
-      manual.reset();
-      void bookings.retry();
-    } catch (error) {
-      toast.error('No se pudo registrar la reserva', getErrorMessage(error));
-    }
-  };
-
-  const runAction = async (
-    action: () => Promise<Booking>,
-    successMessage: string,
-    onDone: () => void,
-  ) => {
-    setActionLoading(true);
-    try {
-      await action();
-      toast.success(successMessage);
-      onDone();
-      void bookings.retry();
-    } catch (error) {
-      toast.error('No se pudo completar la acción', getErrorMessage(error));
-    } finally {
-      setActionLoading(false);
-    }
-  };
+  const runAction = useCallback(
+    async (action: () => Promise<Booking>, successMessage: string, onDone: () => void) => {
+      setActionLoading(true);
+      try {
+        await action();
+        toast.success(successMessage);
+        onDone();
+        void retryBookings();
+      } catch (error) {
+        toast.error('No se pudo completar la acción', getErrorMessage(error));
+      } finally {
+        setActionLoading(false);
+      }
+    },
+    [retryBookings, toast],
+  );
 
   const columns = useMemo<Column<Booking>[]>(
     () => [
@@ -202,6 +168,23 @@ export function AdminBookingsPage() {
             >
               Notas
             </Button>
+            {row.status === 'PENDING_PAYMENT' ? (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={actionLoading}
+                leftIcon={<Check className="h-4 w-4" />}
+                onClick={() => {
+                  void runAction(
+                    () => adminApi.confirmBooking(row.id),
+                    'Reserva confirmada',
+                    () => undefined,
+                  );
+                }}
+              >
+                Confirmar
+              </Button>
+            ) : null}
             {row.status === 'CONFIRMED' ? (
               <>
                 <Button size="sm" variant="outline" onClick={() => setCompleteTarget(row)}>
@@ -221,19 +204,23 @@ export function AdminBookingsPage() {
         ),
       },
     ],
-    [],
+    [actionLoading, runAction],
   );
 
   const hasFilters = Boolean(search || status || paymentMethod || courtId || from || to);
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <SectionHeading eyebrow="Reservas" title="Gestión de reservas" />
-        <Button leftIcon={<CalendarPlus className="h-4 w-4" />} onClick={() => setManualOpen(true)}>
-          Nueva reserva manual
-        </Button>
-      </div>
+      <AdminPageHeader
+        eyebrow="Reservas"
+        title="Gestión de reservas"
+        description="Buscá, filtrá y gestioná los turnos del club. Las acciones quedan registradas en la auditoría."
+        actions={
+          <Button leftIcon={<CalendarPlus className="h-4 w-4" />} onClick={() => setManualOpen(true)}>
+            Ingresar reserva manual
+          </Button>
+        }
+      />
 
       <Card className="p-4">
         <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr_1fr_auto]">
@@ -336,104 +323,11 @@ export function AdminBookingsPage() {
         </>
       )}
 
-      <Modal
+      <ManualBookingModal
         open={manualOpen}
         onClose={() => setManualOpen(false)}
-        title="Nueva reserva manual"
-        description="La reserva manual bloquea la disponibilidad igual que una reserva online."
-        size="lg"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setManualOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleManualSubmit}>Registrar reserva</Button>
-          </>
-        }
-      >
-        <form className="grid gap-4 sm:grid-cols-2" onSubmit={handleManualSubmit} noValidate>
-          <Field label="Cancha" htmlFor="manual-court" required error={manual.errors.courtId}>
-            <Select
-              id="manual-court"
-              value={manual.values.courtId}
-              invalid={Boolean(manual.errors.courtId)}
-              onChange={(event) => manual.setField('courtId', event.target.value)}
-            >
-              <option value="">Seleccioná una cancha</option>
-              {(courts.data ?? [])
-                .filter((court) => court.status === 'ACTIVE')
-                .map((court) => (
-                  <option key={court.id} value={court.id}>
-                    {court.name}
-                  </option>
-                ))}
-            </Select>
-          </Field>
-          <Field label="Duración" htmlFor="manual-duration" required error={manual.errors.durationMinutes}>
-            <Select
-              id="manual-duration"
-              value={String(manual.values.durationMinutes)}
-              onChange={(event) => manual.setField('durationMinutes', Number(event.target.value))}
-            >
-              <option value="60">1 hora</option>
-              <option value="90">1 hora 30 min</option>
-              <option value="120">2 horas</option>
-            </Select>
-          </Field>
-          <Field label="Fecha" htmlFor="manual-date" required error={manual.errors.date}>
-            <Input
-              id="manual-date"
-              type="date"
-              min={todayIso()}
-              value={manual.values.date}
-              invalid={Boolean(manual.errors.date)}
-              onChange={(event) => manual.setField('date', event.target.value)}
-            />
-          </Field>
-          <Field label="Hora de inicio" htmlFor="manual-time" required error={manual.errors.startTime}>
-            <Input
-              id="manual-time"
-              type="time"
-              value={manual.values.startTime}
-              invalid={Boolean(manual.errors.startTime)}
-              onChange={(event) => manual.setField('startTime', event.target.value)}
-            />
-          </Field>
-          <Field label="Nombre del cliente" htmlFor="manual-name" required error={manual.errors.fullName}>
-            <Input
-              id="manual-name"
-              value={manual.values.fullName}
-              invalid={Boolean(manual.errors.fullName)}
-              onChange={(event) => manual.setField('fullName', event.target.value)}
-            />
-          </Field>
-          <Field label="Teléfono" htmlFor="manual-phone" required error={manual.errors.phone}>
-            <Input
-              id="manual-phone"
-              value={manual.values.phone}
-              invalid={Boolean(manual.errors.phone)}
-              onChange={(event) => manual.setField('phone', event.target.value)}
-            />
-          </Field>
-          <Field label="Email" htmlFor="manual-email" required error={manual.errors.email} className="sm:col-span-2">
-            <Input
-              id="manual-email"
-              type="email"
-              value={manual.values.email}
-              invalid={Boolean(manual.errors.email)}
-              onChange={(event) => manual.setField('email', event.target.value)}
-            />
-          </Field>
-          <Field label="Notas (opcional)" htmlFor="manual-notes" className="sm:col-span-2">
-            <Textarea
-              id="manual-notes"
-              rows={2}
-              value={manual.values.notes}
-              onChange={(event) => manual.setField('notes', event.target.value)}
-            />
-          </Field>
-        </form>
-      </Modal>
+        onCreated={() => void bookings.retry()}
+      />
 
       <Modal
         open={notesTarget !== null}

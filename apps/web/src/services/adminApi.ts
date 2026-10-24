@@ -1,12 +1,15 @@
 import type {
   AuditLog,
   Booking,
+  BookingPaymentMethod,
   BookingReport,
+  CamerasOverview,
   Court,
   CourtBlock,
   CourtSchedule,
   Customer,
   DashboardStats,
+  ManualBookingStatus,
   ManualPaymentMethod,
   Paginated,
   Payment,
@@ -42,6 +45,10 @@ interface ManualBookingInput {
   durationMinutes: number;
   customer: { fullName: string; email: string; phone: string };
   notes?: string;
+  /** Medio de pago declarado al registrar la reserva (opcional). */
+  paymentMethod?: BookingPaymentMethod;
+  /** Estado inicial: confirmada o pendiente de pago. */
+  status?: ManualBookingStatus;
 }
 
 export const adminApi = {
@@ -67,6 +74,12 @@ export const adminApi = {
     return env.useMocks
       ? mockBackend.getDashboard()
       : apiRequest<DashboardStats>('/admin/dashboard');
+  },
+
+  getCameras(): Promise<CamerasOverview> {
+    return env.useMocks
+      ? mockBackend.getCameras()
+      : apiRequest<CamerasOverview>('/admin/cameras');
   },
 
   listCourts(): Promise<Court[]> {
@@ -158,6 +171,16 @@ export const adminApi = {
     return env.useMocks
       ? mockBackend.createManualBooking(data)
       : apiRequest<Booking>('/admin/bookings', { method: 'POST', body: data });
+  },
+
+  /** Confirma una reserva pendiente de pago (transición PENDING_PAYMENT → CONFIRMED). */
+  confirmBooking(id: string): Promise<Booking> {
+    return env.useMocks
+      ? mockBackend.confirmBooking(id)
+      : apiRequest<Booking>(`/admin/bookings/${id}`, {
+          method: 'PATCH',
+          body: { status: 'CONFIRMED' },
+        });
   },
 
   updateBookingNotes(id: string, notes: string): Promise<Booking> {

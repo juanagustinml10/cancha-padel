@@ -10,7 +10,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Badge } from '@/components/ui/Badge';
 import { FullPageLoader } from '@/components/ui/Spinner';
 import { ErrorState } from '@/components/ui/States';
-import { SectionHeading } from '@/components/ui/SectionHeading';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { useAsync } from '@/hooks/useAsync';
 import { adminApi } from '@/services/adminApi';
 import { useToast } from '@/context/ToastContext';
@@ -62,9 +62,12 @@ export function AdminCalendarPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <SectionHeading eyebrow="Calendario" title="Agenda de reservas" />
-        <div className="flex flex-wrap items-center gap-2">
+      <AdminPageHeader
+        eyebrow="Calendario"
+        title="Agenda de reservas"
+        description="Visualizá la ocupación por día, semana o mes y gestioná cada turno."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
           <div className="flex rounded-xl border border-border bg-surface p-1">
             {(Object.keys(VIEW_LABELS) as ViewMode[]).map((mode) => (
               <button
@@ -86,8 +89,9 @@ export function AdminCalendarPage() {
           >
             Nueva reserva
           </Button>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       <Card className="p-4">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

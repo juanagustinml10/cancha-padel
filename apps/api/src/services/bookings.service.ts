@@ -45,6 +45,15 @@ export interface CreateBookingInput {
   transferReference?: string;
 }
 
+/**
+ * Reserva manual del staff. Admite además el medio de pago declarado y el estado
+ * inicial: `CONFIRMED` (reserva confirmada) o `PENDING_PAYMENT` (pago pendiente).
+ * En ninguno caso se asienta un pago: eso se hace desde el panel de pagos.
+ */
+export interface ManualBookingInput extends CreateBookingInput {
+  status?: 'CONFIRMED' | 'PENDING_PAYMENT';
+}
+
 /** Medios que no se cobran online: la reserva queda retenida y pendiente de confirmación. */
 function isOfflinePayment(method: BookingPaymentMethod): boolean {
   return method === BookingPaymentMethod.CASH || method === BookingPaymentMethod.TRANSFER;
@@ -366,7 +375,7 @@ export async function createOnlineBooking(input: CreateBookingInput): Promise<Bo
 }
 
 export async function createManualBooking(
-  input: CreateBookingInput,
+  input: ManualBookingInput,
   actor: ActorContext,
 ): Promise<Booking> {
   const context = await resolveSlotContext(input.courtId, input.startsAt, input.durationMinutes, {
@@ -374,6 +383,10 @@ export async function createManualBooking(
   });
   const pricing = await resolveBookingPricing(context);
   const now = new Date();
+  // Estado inicial: por defecto confirmada; el staff puede dejarla pendiente de pago.
+  // El turno lo administra el staff: no se le aplica ventana de vencimiento automática.
+  const status =
+    input.status === 'PENDING_PAYMENT' ? BookingStatus.PENDING_PAYMENT : BookingStatus.CONFIRMED;
 
   const bookingId = await prisma.$transaction(async (tx) => {
     await lockCourt(tx, context.courtId);
@@ -384,12 +397,12 @@ export async function createManualBooking(
       customerId,
       context,
       pricing,
-      status: BookingStatus.CONFIRMED,
+      status,
       source: 'ADMIN',
-      paymentMethod: null,
+      paymentMethod: input.paymentMethod ?? null,
       notes: input.notes,
       expiresAt: null,
-      confirmedAt: now,
+      confirmedAt: status === BookingStatus.CONFIRMED ? now : null,
       createdById: actor.userId ?? null,
     });
   });

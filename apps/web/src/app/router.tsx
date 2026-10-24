@@ -22,6 +22,7 @@ import { AdminPaymentsPage } from '@/pages/admin/AdminPaymentsPage';
 import { AdminReportsPage } from '@/pages/admin/AdminReportsPage';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
 import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage';
+import { AdminCamerasPage } from '@/pages/admin/AdminCamerasPage';
 
 /**
  * Definición de rutas.
@@ -83,6 +84,11 @@ export const router = createBrowserRouter([
             path: 'configuracion',
             element: <RequireAuth roles={['ADMIN']} />,
             children: [{ index: true, element: <AdminSettingsPage /> }],
+          },
+          {
+            path: 'camaras',
+            element: <RequireAuth roles={['ADMIN']} />,
+            children: [{ index: true, element: <AdminCamerasPage /> }],
           },
         ],
       },

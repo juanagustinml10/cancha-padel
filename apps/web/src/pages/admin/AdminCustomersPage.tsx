@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Field } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
-import { SectionHeading } from '@/components/ui/SectionHeading';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState, ErrorState } from '@/components/ui/States';
 import { useAsync } from '@/hooks/useAsync';
@@ -57,7 +57,7 @@ export function AdminCustomersPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <SectionHeading
+      <AdminPageHeader
         eyebrow="Clientes"
         title="Base de clientes"
         description="Historial de reservas y notas internas por cliente."

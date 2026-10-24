@@ -8,7 +8,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { SectionHeading } from '@/components/ui/SectionHeading';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DataTable, type Column } from '@/components/admin/DataTable';
 import { EmptyState, ErrorState } from '@/components/ui/States';
 import { useAsync } from '@/hooks/useAsync';
@@ -120,16 +120,16 @@ export function AdminUsersPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <SectionHeading
-          eyebrow="Usuarios"
-          title="Usuarios del sistema"
-          description="Administradores y recepción. El rol define los permisos en el panel."
-        />
-        <Button leftIcon={<Plus className="h-4 w-4" />} onClick={() => setOpen(true)}>
-          Nuevo usuario
-        </Button>
-      </div>
+      <AdminPageHeader
+        eyebrow="Usuarios"
+        title="Usuarios del sistema"
+        description="Administradores y recepción. El rol define los permisos en el panel."
+        actions={
+          <Button leftIcon={<Plus className="h-4 w-4" />} onClick={() => setOpen(true)}>
+            Nuevo usuario
+          </Button>
+        }
+      />
 
       {users.error ? (
         <ErrorState message={users.error} onRetry={users.retry} />

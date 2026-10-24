@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { SectionHeading } from '@/components/ui/SectionHeading';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DataTable, type Column } from '@/components/admin/DataTable';
 import { EmptyState, ErrorState } from '@/components/ui/States';
 import { useAsync } from '@/hooks/useAsync';
@@ -144,12 +144,16 @@ export function AdminCourtsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <SectionHeading eyebrow="Canchas" title="Gestión de canchas" />
-        <Button leftIcon={<Plus className="h-4 w-4" />} onClick={openCreate}>
-          Nueva cancha
-        </Button>
-      </div>
+      <AdminPageHeader
+        eyebrow="Canchas"
+        title="Gestión de canchas"
+        description="Nombre, tipo, superficie, iluminación y estado operativo de cada cancha del complejo."
+        actions={
+          <Button leftIcon={<Plus className="h-4 w-4" />} onClick={openCreate}>
+            Nueva cancha
+          </Button>
+        }
+      />
 
       {courts.error ? (
         <ErrorState message={courts.error} onRetry={courts.retry} />

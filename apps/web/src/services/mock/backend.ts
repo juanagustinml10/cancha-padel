@@ -5,6 +5,7 @@ import type {
   Booking,
   BookingPaymentMethod,
   BookingReport,
+  CamerasOverview,
   CheckoutResponse,
   ClubInfo,
   ContactMessage,
@@ -217,6 +218,8 @@ function buildBooking(
     source: Booking['source'];
     status: Booking['status'];
     paymentMethod?: BookingPaymentMethod | null;
+    /** Retención del turno. Las reservas que administra el staff no vencen solas. */
+    expiresAt?: string | null;
   },
 ): Booking {
   const court = state.courts.find((c) => c.id === req.courtId);
@@ -273,11 +276,13 @@ function buildBooking(
     notes: req.notes ?? '',
     // Efectivo/transferencia: el turno queda retenido hasta que el staff confirme, sin vencimiento.
     expiresAt:
-      req.status === 'PENDING_PAYMENT' &&
-      req.paymentMethod !== 'CASH' &&
-      req.paymentMethod !== 'TRANSFER'
-        ? new Date(Date.now() + state.settings.bookingHoldMinutes * 60_000).toISOString()
-        : null,
+      req.expiresAt !== undefined
+        ? req.expiresAt
+        : req.status === 'PENDING_PAYMENT' &&
+            req.paymentMethod !== 'CASH' &&
+            req.paymentMethod !== 'TRANSFER'
+          ? new Date(Date.now() + state.settings.bookingHoldMinutes * 60_000).toISOString()
+          : null,
     confirmedAt: req.status === 'CONFIRMED' ? now : null,
     cancelledAt: null,
     cancellationReason: null,
@@ -537,6 +542,15 @@ export const mockBackend = {
     };
   },
 
+  async getCameras(): Promise<CamerasOverview> {
+    mockBackend.requireAdmin();
+    return {
+      status: 'NOT_CONFIGURED',
+      cameras: [],
+      checkedAt: new Date().toISOString(),
+    };
+  },
+
   // ---------- Canchas ----------
   async listCourts(): Promise<Court[]> {
     mockBackend.requireAuth();
@@ -689,13 +703,22 @@ export const mockBackend = {
     durationMinutes: number;
     customer: { fullName: string; email: string; phone: string };
     notes?: string;
+    paymentMethod?: BookingPaymentMethod | null;
+    status?: 'CONFIRMED' | 'PENDING_PAYMENT';
   }): Promise<Booking> {
     mockBackend.requireAuth();
+    // Misma regla que el backend real: valida cancha, horario y solapamiento antes de crear.
     const booking = buildBooking({
-      ...data,
+      courtId: data.courtId,
+      startsAt: data.startsAt,
+      durationMinutes: data.durationMinutes,
+      customer: data.customer,
+      notes: data.notes,
       source: 'ADMIN',
-      status: 'CONFIRMED',
-      paymentMethod: null,
+      status: data.status === 'PENDING_PAYMENT' ? 'PENDING_PAYMENT' : 'CONFIRMED',
+      paymentMethod: data.paymentMethod ?? null,
+      // El turno lo administra el staff: sin vencimiento automático.
+      expiresAt: null,
     });
     audit('booking.create.manual', 'Booking', booking.id);
     return booking;
@@ -730,6 +753,27 @@ export const mockBackend = {
     booking.status = 'COMPLETED';
     booking.updatedAt = new Date().toISOString();
     audit('booking.complete', 'Booking', id);
+    return booking;
+  },
+
+  /** Confirma una reserva que estaba pendiente de pago (misma transición que la API real). */
+  async confirmBooking(id: string): Promise<Booking> {
+    mockBackend.requireAuth();
+    const booking = state.bookings.find((b) => b.id === id);
+    if (!booking) throw new ApiError('Reserva no encontrada.', 404, 'BOOKING_NOT_FOUND');
+    if (booking.status !== 'PENDING_PAYMENT') {
+      throw new ApiError(
+        `No se puede pasar una reserva de "${booking.status}" a "CONFIRMED".`,
+        422,
+        'INVALID_TRANSITION',
+      );
+    }
+    const now = new Date().toISOString();
+    booking.status = 'CONFIRMED';
+    booking.confirmedAt = now;
+    booking.expiresAt = null;
+    booking.updatedAt = now;
+    audit('booking.update', 'Booking', id);
     return booking;
   },
 

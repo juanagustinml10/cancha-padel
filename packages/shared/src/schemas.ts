@@ -111,16 +111,26 @@ export const blockSchema = z
 
 export type BlockFormValues = z.infer<typeof blockSchema>;
 
+/**
+ * Reserva manual cargada por el staff.
+ * El horario se toma de la disponibilidad real del servidor (slot seleccionado),
+ * por lo que `startsAt` es un ISO 8601 y no una hora suelta.
+ */
 export const manualBookingSchema = z.object({
   courtId: z.string().min(1, 'Seleccioná una cancha'),
   date: z.string().min(1, 'Seleccioná una fecha'),
-  startTime: z.string().min(1, 'Seleccioná un horario'),
-  durationMinutes: z.coerce.number().int().positive(),
+  startsAt: z.string().min(1, 'Seleccioná un horario'),
+  durationMinutes: z.coerce.number().int().positive('Seleccioná una duración'),
   fullName: z.string().trim().min(3, 'Ingresá el nombre del cliente'),
   email: emailSchema,
   phone: phoneSchema,
   notes: z.string().trim().max(500).optional().or(z.literal('')),
 });
+
+/** Estados iniciales admitidos al crear una reserva manual. */
+export const manualBookingStatusSchema = z.enum(['CONFIRMED', 'PENDING_PAYMENT']);
+
+export type ManualBookingStatus = z.infer<typeof manualBookingStatusSchema>;
 
 export type ManualBookingFormValues = z.infer<typeof manualBookingSchema>;
 

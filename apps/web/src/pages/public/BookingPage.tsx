@@ -3,14 +3,9 @@ import { Link, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   ArrowRight,
-  Banknote,
   CalendarCheck,
   CheckCircle2,
-  CreditCard,
   Info,
-  Landmark,
-  Lightbulb,
-  Warehouse,
 } from 'lucide-react';
 import type { AvailabilitySlot, BookingPaymentMethod } from '@padel/shared';
 import { customerSchema } from '@padel/shared';
@@ -20,13 +15,14 @@ import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
-import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { ErrorState, EmptyState } from '@/components/ui/States';
 import { BookingStepper } from '@/components/booking/BookingStepper';
 import { DatePicker } from '@/components/booking/DatePicker';
 import { DurationSelector } from '@/components/booking/DurationSelector';
 import { TimeSlotPicker } from '@/components/booking/TimeSlotPicker';
+import { CourtPicker, groupSlotsByCourt } from '@/components/booking/CourtPicker';
+import { PaymentMethodPicker } from '@/components/booking/PaymentMethodPicker';
 import { BookingSummary } from '@/components/booking/BookingSummary';
 import { useAsync } from '@/hooks/useAsync';
 import { useZodForm } from '@/hooks/useZodForm';
@@ -37,38 +33,9 @@ import { todayIso, parseDateOnly } from '@/lib/datetime';
 import { formatCurrency, formatDateTime, formatDate } from '@/lib/format';
 import { paymentMethodLabel } from '@/lib/status';
 import { env } from '@/lib/env';
-import { cn } from '@/lib/utils';
 
 const DURATIONS = [60, 90, 120];
 const STEPS = ['Fecha y duración', 'Cancha y horario', 'Tus datos', 'Medio de pago', 'Confirmar'];
-
-interface PaymentOption {
-  value: BookingPaymentMethod;
-  title: string;
-  description: string;
-  icon: typeof Banknote;
-}
-
-const PAYMENT_OPTIONS: PaymentOption[] = [
-  {
-    value: 'MERCADOPAGO',
-    title: 'Mercado Pago',
-    description: 'Pagás la seña online con tarjeta o dinero en cuenta.',
-    icon: CreditCard,
-  },
-  {
-    value: 'TRANSFER',
-    title: 'Transferencia',
-    description: 'Transferís la seña al complejo y cargás el número de operación.',
-    icon: Landmark,
-  },
-  {
-    value: 'CASH',
-    title: 'Efectivo',
-    description: 'Abonás la seña en el club al ingresar a la cancha.',
-    icon: Banknote,
-  },
-];
 
 export function BookingPage() {
   const toast = useToast();
@@ -110,15 +77,10 @@ export function BookingPage() {
     [courtsQuery.data],
   );
 
-  const slotsByCourt = useMemo(() => {
-    const map = new Map<string, AvailabilitySlot[]>();
-    for (const slot of availabilityQuery.data?.slots ?? []) {
-      const list = map.get(slot.courtId) ?? [];
-      list.push(slot);
-      map.set(slot.courtId, list);
-    }
-    return map;
-  }, [availabilityQuery.data]);
+  const slotsByCourt = useMemo(
+    () => groupSlotsByCourt(availabilityQuery.data?.slots ?? []),
+    [availabilityQuery.data],
+  );
 
   const selectedCourt = activeCourts.find((court) => court.id === courtId) ?? null;
 
@@ -402,42 +364,15 @@ export function BookingPage() {
                   <EmptyState title="No hay canchas disponibles" />
                 ) : (
                   <>
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      {activeCourts.map((court) => {
-                        const slots = slotsByCourt.get(court.id) ?? [];
-                        const available = slots.filter((slot) => slot.available).length;
-                        const selected = court.id === courtId;
-                        return (
-                          <button
-                            key={court.id}
-                            type="button"
-                            onClick={() => {
-                              setCourtId(court.id);
-                              resetSlot();
-                            }}
-                            aria-pressed={selected}
-                            className={cn(
-                              'flex flex-col items-start gap-1 rounded-xl border px-4 py-3 text-left transition-colors',
-                              selected
-                                ? 'border-primary bg-brand-soft'
-                                : 'border-line bg-surface hover:border-primary/50 hover:bg-surface-2',
-                            )}
-                          >
-                            <span className="inline-flex items-center gap-2 text-sm font-semibold text-content">
-                              {court.type === 'INDOOR' ? (
-                                <Warehouse className="h-4 w-4 text-accent" aria-hidden />
-                              ) : (
-                                <Lightbulb className="h-4 w-4 text-accent" aria-hidden />
-                              )}
-                              {court.name}
-                            </span>
-                            <Badge variant={available > 0 ? 'success' : 'neutral'}>
-                              {available > 0 ? `${available} turnos libres` : 'Sin turnos'}
-                            </Badge>
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <CourtPicker
+                      courts={activeCourts}
+                      value={courtId}
+                      onChange={(nextCourtId) => {
+                        setCourtId(nextCourtId);
+                        resetSlot();
+                      }}
+                      slotsByCourt={slotsByCourt}
+                    />
 
                     {selectedCourt ? (
                       <div>
@@ -520,38 +455,7 @@ export function BookingPage() {
                   </p>
                 </div>
 
-                <div role="radiogroup" aria-label="Medio de pago" className="grid gap-3 sm:grid-cols-3">
-                  {PAYMENT_OPTIONS.map((option) => {
-                    const Icon = option.icon;
-                    const selected = paymentMethod === option.value;
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        role="radio"
-                        aria-checked={selected}
-                        onClick={() => setPaymentMethod(option.value)}
-                        className={cn(
-                          'flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-colors',
-                          selected
-                            ? 'border-primary bg-brand-soft'
-                            : 'border-line bg-surface hover:border-primary/50 hover:bg-surface-2',
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            'inline-flex h-9 w-9 items-center justify-center rounded-lg',
-                            selected ? 'bg-primary text-white' : 'bg-surface-2 text-accent',
-                          )}
-                        >
-                          <Icon className="h-5 w-5" aria-hidden />
-                        </span>
-                        <span className="text-sm font-semibold text-content">{option.title}</span>
-                        <span className="text-xs text-muted">{option.description}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <PaymentMethodPicker value={paymentMethod} onChange={(next) => next !== null && setPaymentMethod(next)} />
 
                 {paymentMethod === 'TRANSFER' ? (
                   <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface-2/60 p-5">

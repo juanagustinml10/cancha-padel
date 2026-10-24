@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import {
+  bookingPaymentMethodSchema,
   createBookingSchema,
   emailSchema,
+  manualBookingStatusSchema,
   onlineBookingSchema,
   phoneSchema,
 } from '@padel/shared';
@@ -142,7 +144,12 @@ export const blockBodySchema = z
     path: ['endsAt'],
   });
 
-export const manualBookingBodySchema = createBookingSchema;
+// Reserva manual del staff: además de la reserva base admite el medio de pago
+// declarado y el estado inicial (confirmada o pendiente de pago).
+export const manualBookingBodySchema = createBookingSchema.extend({
+  paymentMethod: bookingPaymentMethodSchema.optional(),
+  status: manualBookingStatusSchema.optional(),
+});
 
 // Reserva online: incluye el medio de pago elegido por el cliente.
 export const onlineBookingBodySchema = onlineBookingSchema;

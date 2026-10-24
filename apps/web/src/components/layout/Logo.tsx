@@ -6,10 +6,10 @@ const NAME_PARTS = DEMO_CLUB.name.trim().split(/\s+/);
 const NAME_HEAD = NAME_PARTS.slice(0, -1).join(' ').toUpperCase();
 const NAME_TAIL = (NAME_PARTS[NAME_PARTS.length - 1] ?? '').toUpperCase();
 
-export function Logo({ compact = false }: { compact?: boolean }) {
+export function Logo({ compact = false, to = '/' }: { compact?: boolean; to?: string }) {
   return (
     <Link
-      to="/"
+      to={to}
       className="group -my-1 inline-flex items-center gap-2.5 rounded-xl py-1 focus-visible:ring-2 focus-visible:ring-accent"
       aria-label="Ir al inicio"
     >

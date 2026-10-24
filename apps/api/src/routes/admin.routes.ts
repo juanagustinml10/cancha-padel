@@ -7,6 +7,7 @@ import { authorize } from '@/middleware/authorize';
 import { recordAudit } from '@/services/audit.service';
 import { listAuditLogs } from '@/services/audit.service';
 import { getDashboard } from '@/services/dashboard.service';
+import { getCamerasOverview } from '@/services/cameras.service';
 import {
   createCourt,
   deleteCourt,
@@ -32,7 +33,7 @@ import {
   updateBookingNotes,
   updateBookingStatus,
   type BookingFilters,
-  type CreateBookingInput,
+  type ManualBookingInput,
 } from '@/services/bookings.service';
 import {
   getCustomer,
@@ -94,6 +95,16 @@ adminRouter.get(
   ...staff,
   asyncHandler(async (_req, res) => {
     res.json(await getDashboard());
+  }),
+);
+
+// ------------------------------ Cámaras ------------------------------------
+
+adminRouter.get(
+  '/cameras',
+  ...admin,
+  asyncHandler(async (_req, res) => {
+    res.json(getCamerasOverview());
   }),
 );
 
@@ -255,7 +266,7 @@ adminRouter.post(
   ...staff,
   validate(manualBookingBodySchema),
   asyncHandler(async (req, res) => {
-    const booking = await createManualBooking(req.body as CreateBookingInput, auditContext(req));
+    const booking = await createManualBooking(req.body as ManualBookingInput, auditContext(req));
     await recordAudit({ ...auditContext(req), action: 'booking.create.manual', entity: 'Booking', entityId: booking.id });
     res.status(201).json(booking);
   }),

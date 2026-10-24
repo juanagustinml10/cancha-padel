@@ -9,7 +9,7 @@ import { Select } from '@/components/ui/Select';
 import { Field } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { SectionHeading } from '@/components/ui/SectionHeading';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DataTable, type Column } from '@/components/admin/DataTable';
 import { EmptyState, ErrorState } from '@/components/ui/States';
 import { FullPageLoader } from '@/components/ui/Spinner';
@@ -127,16 +127,16 @@ export function AdminSchedulePage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <SectionHeading
-          eyebrow="Horarios"
-          title="Horarios de atención"
-          description="Definí la apertura, el cierre y la granularidad de turnos por día."
-        />
-        <Button leftIcon={<Save className="h-4 w-4" />} onClick={handleSave} loading={saving}>
-          Guardar horarios
-        </Button>
-      </div>
+      <AdminPageHeader
+        eyebrow="Horarios"
+        title="Horarios de atención"
+        description="Definí la apertura, el cierre y la granularidad de turnos por día."
+        actions={
+          <Button leftIcon={<Save className="h-4 w-4" />} onClick={handleSave} loading={saving}>
+            Guardar horarios
+          </Button>
+        }
+      />
 
       <Card className="overflow-hidden">
         <div className="divide-y divide-border md:hidden">
@@ -252,16 +252,16 @@ export function AdminSchedulePage() {
         </div>
       </Card>
 
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <SectionHeading
-          eyebrow="Bloqueos"
-          title="Bloqueos por mantenimiento o eventos"
-          description="Los bloqueos impiden reservar en el rango indicado."
-        />
-        <Button leftIcon={<Plus className="h-4 w-4" />} onClick={() => setBlockOpen(true)}>
-          Nuevo bloqueo
-        </Button>
-      </div>
+      <AdminPageHeader
+        eyebrow="Bloqueos"
+        title="Bloqueos por mantenimiento o eventos"
+        description="Los bloqueos impiden reservar en el rango indicado."
+        actions={
+          <Button leftIcon={<Plus className="h-4 w-4" />} onClick={() => setBlockOpen(true)}>
+            Nuevo bloqueo
+          </Button>
+        }
+      />
 
       {blocks.error ? (
         <ErrorState message={blocks.error} onRetry={blocks.retry} />

@@ -9,7 +9,7 @@ import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { SectionHeading } from '@/components/ui/SectionHeading';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DataTable, type Column } from '@/components/admin/DataTable';
 import { EmptyState, ErrorState } from '@/components/ui/States';
 import { useAsync } from '@/hooks/useAsync';
@@ -159,16 +159,16 @@ export function AdminPricingPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <SectionHeading
-          eyebrow="Tarifas"
-          title="Precios por franja horaria"
-          description="Las reglas con mayor prioridad se evalúan primero. Si no hay regla, se aplica la tarifa base."
-        />
-        <Button leftIcon={<Plus className="h-4 w-4" />} onClick={openCreate}>
-          Nueva tarifa
-        </Button>
-      </div>
+      <AdminPageHeader
+        eyebrow="Tarifas"
+        title="Precios por franja horaria"
+        description="Las reglas con mayor prioridad se evalúan primero. Si no hay regla, se aplica la tarifa base."
+        actions={
+          <Button leftIcon={<Plus className="h-4 w-4" />} onClick={openCreate}>
+            Nueva tarifa
+          </Button>
+        }
+      />
 
       {pricing.error ? (
         <ErrorState message={pricing.error} onRetry={pricing.retry} />

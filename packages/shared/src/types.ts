@@ -284,6 +284,25 @@ export interface AuditLog {
   createdAt: string;
 }
 
+export type CameraIntegrationStatus = 'NOT_CONFIGURED' | 'CONFIGURED' | 'ERROR';
+export type SecurityCameraStatus = 'ONLINE' | 'OFFLINE' | 'UNKNOWN';
+
+export interface SecurityCamera {
+  id: string;
+  name: string;
+  location: string;
+  courtName?: string | null;
+  protocol: 'HLS' | 'WEBRTC';
+  status: SecurityCameraStatus;
+  lastCheckedAt?: string | null;
+}
+
+export interface CamerasOverview {
+  status: CameraIntegrationStatus;
+  cameras: SecurityCamera[];
+  checkedAt: string;
+}
+
 export interface ReportCourtRow {
   courtId: string;
   courtName: string;

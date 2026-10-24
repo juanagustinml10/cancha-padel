@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, StatCard } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
-import { SectionHeading } from '@/components/ui/SectionHeading';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DataTable, type Column } from '@/components/admin/DataTable';
 import { EmptyState, ErrorState } from '@/components/ui/States';
 import { FullPageLoader } from '@/components/ui/Spinner';
@@ -79,7 +79,7 @@ export function AdminReportsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <SectionHeading
+      <AdminPageHeader
         eyebrow="Reportes"
         title="Reporte de reservas e ingresos"
         description="Cobrado real, importes reservados y ocupación por cancha en el período."

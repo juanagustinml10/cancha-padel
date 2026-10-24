@@ -14,7 +14,7 @@ import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { SectionHeading } from '@/components/ui/SectionHeading';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DataTable, type Column } from '@/components/admin/DataTable';
 import { Pagination } from '@/components/ui/Pagination';
 import { EmptyState, ErrorState } from '@/components/ui/States';
@@ -200,10 +200,15 @@ export function AdminPaymentsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <SectionHeading
+      <AdminPageHeader
         eyebrow="Pagos"
         title="Pagos y señas"
         description="Cobros de Mercado Pago y pagos manuales en efectivo o transferencia. Los reintegros se confirman manualmente."
+        actions={
+          <Button leftIcon={<Plus className="h-4 w-4" />} onClick={() => setManualOpen(true)}>
+            Registrar pago
+          </Button>
+        }
       />
 
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -255,9 +260,6 @@ export function AdminPaymentsPage() {
             Sólo pagos que requieren revisión
           </label>
         </div>
-        <Button leftIcon={<Plus className="h-4 w-4" />} onClick={() => setManualOpen(true)}>
-          Registrar pago
-        </Button>
       </div>
 
       {payments.error ? (
