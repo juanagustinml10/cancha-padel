@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Prisma, PaymentWebhookEvent, WebhookEventStatus } from '@prisma/client';
+import { PaymentStatus } from '@padel/shared';
 import { AppError, unauthorized } from '@/domain/errors';
 import { resolvePaymentDecision } from '@/domain/payment-processing';
 import { isApprovedStatus } from '@/domain/payment-status';
@@ -12,6 +13,14 @@ import {
   WEBHOOK_RETRY_BASE_MS,
 } from '@/config/constants';
 import { logger } from '@/infra/logger';
+
+/**
+ * Namespace de advisory locks de pagos (mismo que payments.service.ts
+ * `PAYMENT_LOCK_NAMESPACE = 4343`). Serializa las mutaciones de pagos de una misma
+ * reserva (webhook vs confirmación manual vs reintegro) sin mezclarse con los locks
+ * de canchas de reservas (4242).
+ */
+const PAYMENT_LOCK_NAMESPACE = 4343;
 
 export interface WebhookRequestInput {
   eventId?: string | null;
@@ -218,24 +227,67 @@ export async function applyWebhookEvent(event: PaymentWebhookEvent): Promise<Web
       return { status: 'duplicate' };
     }
 
-    const approved = isApprovedStatus(decision.mappedStatus);
-    const paymentData = {
-      status: decision.mappedStatus,
-      statusDetail: providerPayment.statusDetail ?? null,
-      method: providerPayment.method ?? null,
-      amountCents: providerPayment.amountCents,
-      currency: providerPayment.currency,
-      rawPayload: providerPayment.raw as Prisma.InputJsonValue,
-      requiresReview: decision.requiresReview,
-      reviewReason: decision.reviewReason,
-      reviewedAt: decision.requiresReview ? null : current?.reviewedAt ?? null,
-    };
+    // El bloque de aplicación corre dentro de UNA transacción que toma el advisory
+    // lock de pagos de la reserva y re-lee estado fresco:
+    //  - evita que webhook + confirmación/reintegro manual simultáneos pierdan
+    //    actualizaciones de `paidAmountCents` (read-modify-write);
+    //  - re-evalúa la decisión con datos frescos (la guarda monótona de estados se
+    //    aplica sobre lo que realmente está persistido).
+    const outcome = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PAYMENT_LOCK_NAMESPACE}::int, hashtext(${booking.id})::int)`;
+      const freshBooking = await tx.booking.findUniqueOrThrow({ where: { id: booking.id } });
+      const freshCurrent = current
+        ? await tx.payment.findUnique({ where: { id: current.id } })
+        : null;
 
-    await prisma.$transaction(async (tx) => {
-      const persisted = current
+      const freshDecision = resolvePaymentDecision(
+        {
+          bookingStatus: freshBooking.status,
+          bookingPaidAmountCents: freshBooking.paidAmountCents,
+          bookingPriceTotalCents: freshBooking.priceTotalCents,
+          expectedDepositCents: freshBooking.depositAmountCents,
+          expectedCurrency: freshBooking.currency,
+          currentPaymentStatus: freshCurrent?.status ?? null,
+        },
+        {
+          providerStatus: providerPayment.status,
+          amountCents: providerPayment.amountCents,
+          currency: providerPayment.currency,
+        },
+      );
+
+      // Sin cambios (duplicado/fuera de orden) sobre el estado real: no se toca nada.
+      if (!freshDecision.applyStatus) {
+        await tx.paymentWebhookEvent.update({
+          where: { id: eventId },
+          data: {
+            status: WebhookEventStatus.PROCESSED,
+            error: `Sin cambios: ${freshDecision.reason}.`,
+            processedAt: now,
+          },
+        });
+        return { applied: false as const, decision: freshDecision };
+      }
+
+      const approved = isApprovedStatus(freshDecision.mappedStatus);
+      const paymentData = {
+        status: freshDecision.mappedStatus,
+        statusDetail: providerPayment.statusDetail ?? null,
+        method: providerPayment.method ?? null,
+        amountCents: providerPayment.amountCents,
+        currency: providerPayment.currency,
+        rawPayload: providerPayment.raw as Prisma.InputJsonValue,
+        requiresReview: freshDecision.requiresReview,
+        reviewReason: freshDecision.reviewReason,
+        reviewedAt: freshDecision.requiresReview ? null : freshCurrent?.reviewedAt ?? null,
+        // Sello de reintegro (simétrico a refundPayment del staff).
+        refundedAt: freshDecision.mappedStatus === PaymentStatus.REFUNDED ? now : undefined,
+      };
+
+      const persisted = freshCurrent
         ? await tx.payment.update({
-            where: { id: current.id },
-            data: { ...paymentData, paidAt: current.paidAt ?? (approved ? now : null) },
+            where: { id: freshCurrent.id },
+            data: { ...paymentData, paidAt: freshCurrent.paidAt ?? (approved ? now : null) },
           })
         : await tx.payment.create({
             data: {
@@ -246,10 +298,10 @@ export async function applyWebhookEvent(event: PaymentWebhookEvent): Promise<Web
             },
           });
 
-      if (decision.action === 'CONFIRM_BOOKING') {
+      if (freshDecision.action === 'CONFIRM_BOOKING') {
         const paidAmountCents = Math.min(
-          booking.priceTotalCents,
-          booking.paidAmountCents + providerPayment.amountCents,
+          freshBooking.priceTotalCents,
+          freshBooking.paidAmountCents + providerPayment.amountCents,
         );
         await tx.booking.update({
           where: { id: booking.id },
@@ -260,14 +312,26 @@ export async function applyWebhookEvent(event: PaymentWebhookEvent): Promise<Web
             paidAmountCents,
           },
         });
-      } else if (decision.action === 'RECORD_ONLY' && approved) {
+      } else if (freshDecision.action === 'RECORD_ONLY' && approved) {
         const paidAmountCents = Math.min(
-          booking.priceTotalCents,
-          booking.paidAmountCents + providerPayment.amountCents,
+          freshBooking.priceTotalCents,
+          freshBooking.paidAmountCents + providerPayment.amountCents,
         );
         await tx.booking.update({
           where: { id: booking.id },
           data: { paidAmountCents },
+        });
+      } else if (freshDecision.mappedStatus === PaymentStatus.REFUNDED) {
+        // Reintegro notificado por el proveedor: se descuenta el importe del total
+        // pagado de la reserva (nunca negativo), simétrico a `refundPayment`.
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: {
+            paidAmountCents: Math.max(
+              0,
+              freshBooking.paidAmountCents - providerPayment.amountCents,
+            ),
+          },
         });
       }
 
@@ -281,21 +345,29 @@ export async function applyWebhookEvent(event: PaymentWebhookEvent): Promise<Web
           processedAt: now,
         },
       });
+
+      return { applied: true as const, decision: freshDecision };
     });
 
-    if (decision.requiresReview) {
+    // Decisión fresca (post-lock): la que refleja el estado realmente aplicado.
+    if (!outcome.applied) {
+      logger.info({ eventId, reason: outcome.decision.reason }, 'Webhook sin cambios (duplicado/fuera de orden)');
+      return { status: 'duplicate' };
+    }
+
+    if (outcome.decision.requiresReview) {
       logger.warn(
-        { eventId, bookingId: booking.id, reason: decision.reason },
+        { eventId, bookingId: booking.id, reason: outcome.decision.reason },
         'Pago marcado para revisión manual',
       );
       return { status: 'review' };
     }
 
     logger.info(
-      { eventId, bookingId: booking.id, action: decision.action, reason: decision.reason },
+      { eventId, bookingId: booking.id, action: outcome.decision.action, reason: outcome.decision.reason },
       'Webhook procesado',
     );
-    return { status: decision.action === 'IGNORE' ? 'ignored' : 'processed' };
+    return { status: outcome.decision.action === 'IGNORE' ? 'ignored' : 'processed' };
   } catch (error) {
     if (error instanceof AppError) {
       // La firma inválida ya quedó marcada como fallida; se re-lanza para responder 401.

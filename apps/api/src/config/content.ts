@@ -105,4 +105,5 @@ export const DEFAULT_PRICING = [
   { label: 'Mañana', startTime: '08:00', endTime: '12:00', weekday: null, priceCents: 800000 },
   { label: 'Tarde', startTime: '12:00', endTime: '19:00', weekday: null, priceCents: 1000000 },
   { label: 'Noche', startTime: '19:00', endTime: '23:00', weekday: null, priceCents: 1200000 },
+  { label: 'Fin de semana', startTime: '00:00', endTime: '23:59', weekday: null, priceCents: 1500000 },
 ];

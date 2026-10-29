@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CalendarPlus, ChevronLeft, ChevronRight } from 'lucide-react';
-import type { Booking } from '@padel/shared';
+import type { Booking, Paginated } from '@padel/shared';
 import { CalendarView, type CalendarView as ViewMode } from '@/components/admin/CalendarView';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -26,6 +26,49 @@ const VIEW_LABELS: Record<ViewMode, string> = {
   month: 'Mes',
 };
 
+/** El API limita cada consulta a 100 registros; el calendario agrega todas las páginas. */
+const CALENDAR_PAGE_SIZE = 100;
+/** Tope de seguridad para que una consulta descontrolada no prolongue indefinidamente el bucle. */
+const CALENDAR_MAX_BOOKINGS = 2000;
+
+/**
+ * Reúne todas las reservas del rango solicitando la API página por página, dentro
+ * del máximo admitido por petición. Si la cantidad excede el tope de seguridad, se
+ * devuelven las primeras páginas disponibles (la vista queda consistente y sin error).
+ */
+async function fetchAllBookings(range: { from: string; to: string }): Promise<Paginated<Booking>> {
+  const maxPages = Math.ceil(CALENDAR_MAX_BOOKINGS / CALENDAR_PAGE_SIZE);
+  let result = await adminApi.listBookings({
+    from: range.from,
+    to: range.to,
+    page: 1,
+    pageSize: CALENDAR_PAGE_SIZE,
+  });
+
+  while (
+    result.meta.page < maxPages &&
+    result.meta.page * result.meta.pageSize < result.meta.total
+  ) {
+    const next = await adminApi.listBookings({
+      from: range.from,
+      to: range.to,
+      page: result.meta.page + 1,
+      pageSize: CALENDAR_PAGE_SIZE,
+    });
+    if (next.data.length === 0) break; // protección extra contra un servidor inconsistente
+    result = {
+      data: [...result.data, ...next.data],
+      meta: {
+        ...result.meta,
+        page: next.meta.page,
+        pageSize: next.meta.pageSize,
+        total: next.meta.total,
+      },
+    };
+  }
+  return result;
+}
+
 export function AdminCalendarPage() {
   const navigate = useNavigate();
   const toast = useToast();
@@ -44,10 +87,7 @@ export function AdminCalendarPage() {
     return { from: first.toISOString().slice(0, 10), to: last.toISOString().slice(0, 10) };
   }, [view, date]);
 
-  const bookings = useAsync(
-    () => adminApi.listBookings({ from: range.from, to: range.to, pageSize: 500 }),
-    [range.from, range.to],
-  );
+  const bookings = useAsync(() => fetchAllBookings(range), [range.from, range.to]);
   const courts = useAsync(() => adminApi.listCourts(), []);
 
   const shift = (direction: -1 | 1) => {

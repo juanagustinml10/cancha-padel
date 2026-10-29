@@ -58,6 +58,8 @@ export async function getAvailability(
     currency: rule.currency,
     isActive: rule.isActive,
     priority: rule.priority,
+    validFrom: rule.validFrom,
+    validTo: rule.validTo,
   }));
 
   const availabilityCourts: AvailabilityCourt[] = courts.map((court) => ({
@@ -89,8 +91,12 @@ export async function getAvailability(
       startsAt: block.startsAt,
       endsAt: block.endsAt,
     })),
-    resolvePrice: (courtIdValue, startTime, duration) =>
-      resolvePrice(pricingInputs, { courtId: courtIdValue, weekday, startTime, durationMinutes: duration }, env.CURRENCY),
+    resolvePrice: (courtIdValue, startTime, duration, startsAt) =>
+      resolvePrice(
+        pricingInputs,
+        { courtId: courtIdValue, weekday, startTime, durationMinutes: duration, at: startsAt },
+        env.CURRENCY,
+      ),
     computeDeposit: (priceCents) => computeDeposit(priceCents, settings),
   });
 }

@@ -53,7 +53,12 @@ export interface BuildAvailabilityArgs {
   schedules: AvailabilitySchedule[];
   bookings: BusyInterval[];
   blocks: BusyInterval[];
-  resolvePrice: (courtId: string, startTime: string, durationMinutes: number) => ResolvedPrice;
+  resolvePrice: (
+    courtId: string,
+    startTime: string,
+    durationMinutes: number,
+    startsAt: Date,
+  ) => ResolvedPrice;
   computeDeposit: (priceCents: number) => number;
 }
 
@@ -120,7 +125,8 @@ export function buildAvailability(args: BuildAvailabilityArgs): AvailabilityResu
         (isBusy(bookings, court.id, startsAt, endsAt) ||
           isBusy(blocks, court.id, startsAt, endsAt));
 
-      const resolved = resolvePrice(court.id, startTime, durationMinutes);
+      // El instante del slot se pasa para evaluar la vigencia de las tarifas.
+      const resolved = resolvePrice(court.id, startTime, durationMinutes, startsAt);
       const priceCents = resolved.priceCents;
       const depositAmountCents = computeDeposit(priceCents);
 

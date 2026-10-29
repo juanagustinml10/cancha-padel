@@ -20,6 +20,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import { EmptyState, ErrorState } from '@/components/ui/States';
 import { useAsync } from '@/hooks/useAsync';
 import { adminApi } from '@/services/adminApi';
+import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/lib/errors';
 import { formatCurrency, formatDateShort, formatTime } from '@/lib/format';
@@ -41,6 +42,10 @@ function providerLabel(payment: Payment): string {
 
 export function AdminPaymentsPage() {
   const toast = useToast();
+  const { user } = useAuth();
+  // Autoridad real de permisos: el backend exige ADMIN para re-integrar
+  // (POST /admin/payments/:id/refund); la UI oculta la acción para recepción.
+  const canRefund = user?.role === 'ADMIN';
   const [status, setStatus] = useState('');
   const [provider, setProvider] = useState('');
   const [reviewOnly, setReviewOnly] = useState(false);
@@ -181,21 +186,30 @@ export function AdminPaymentsPage() {
           }
           if (row.status === 'APPROVED') {
             return (
-              <Button
-                size="sm"
-                variant="outline"
-                leftIcon={<Undo2 className="h-3.5 w-3.5" />}
-                onClick={() => setRefundTarget(row)}
-              >
-                Reintegrar
-              </Button>
+              <div className="flex items-center justify-end">
+                {canRefund ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    leftIcon={<Undo2 className="h-3.5 w-3.5" />}
+                    onClick={() => setRefundTarget(row)}
+                  >
+                    Reintegrar
+                  </Button>
+                ) : (
+                  <span className="text-xs text-muted" title="Sólo administración puede reintegrar">
+                    —
+                  </span>
+                )}
+              </div>
             );
           }
           return <span className="text-xs text-muted">—</span>;
         },
       },
     ],
-    [],
+    // canRefund depende del rol del usuario logueado (estable por sesión).
+    [canRefund],
   );
 
   return (

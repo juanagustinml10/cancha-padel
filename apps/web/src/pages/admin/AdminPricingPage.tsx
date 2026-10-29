@@ -18,6 +18,7 @@ import { adminApi } from '@/services/adminApi';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/lib/errors';
 import { formatCurrency, formatDuration, weekdayLabel } from '@/lib/format';
+import { todayIso } from '@/lib/datetime';
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 0];
 
@@ -88,7 +89,7 @@ export function AdminPricingPage() {
         durationMinutes: Number(data.durationMinutes),
         priceCents: Math.round(data.priceAmount * 100),
         currency: editing?.currency ?? 'ARS',
-        validFrom: editing?.validFrom ?? new Date().toISOString().slice(0, 10),
+        validFrom: editing?.validFrom ?? todayIso(),
         validTo: editing?.validTo ?? null,
         isActive: data.isActive,
         priority: Number(data.priority),
@@ -119,8 +120,15 @@ export function AdminPricingPage() {
       },
       {
         key: 'time',
-        header: 'Franja',
-        render: (row) => `${row.startTime} – ${row.endTime}`,
+        header: 'Tarifa',
+        render: (row) => {
+          const start = row.startTime;
+          if (start === '08:00') return 'Mañana';
+          if (start === '12:00') return 'Tarde';
+          if (start === '19:00') return 'Noche';
+          if (start === '00:00') return 'Fin de semana';
+          return start;
+        },
       },
       { key: 'duration', header: 'Duración', render: (row) => formatDuration(row.durationMinutes) },
       {
@@ -162,7 +170,7 @@ export function AdminPricingPage() {
       <AdminPageHeader
         eyebrow="Tarifas"
         title="Precios por franja horaria"
-        description="Las reglas con mayor prioridad se evalúan primero. Si no hay regla, se aplica la tarifa base."
+        description="4 bandas horarias para fijar precios. El precio se calcula automáticamente según la duración de la reserva."
         actions={
           <Button leftIcon={<Plus className="h-4 w-4" />} onClick={openCreate}>
             Nueva tarifa
@@ -198,7 +206,7 @@ export function AdminPricingPage() {
         }
       >
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit} noValidate>
-          <Field label="Cancha" htmlFor="pricing-court" hint="Dejá “Todas” para aplicar a cualquier cancha.">
+          <Field label="Cancha" htmlFor="pricing-court" hint="Dejá “Todas” para aplicar a todas las canchas.">
             <Select
               id="pricing-court"
               value={form.values.courtId}
@@ -253,7 +261,7 @@ export function AdminPricingPage() {
               onChange={(event) => form.setField('durationMinutes', Number(event.target.value))}
             />
           </Field>
-          <Field label="Precio (ARS)" htmlFor="pricing-price" required error={form.errors.priceAmount}>
+          <Field label="Precio por hora (ARS)" htmlFor="pricing-price" required error={form.errors.priceAmount}>
             <Input
               id="pricing-price"
               type="number"
@@ -263,6 +271,9 @@ export function AdminPricingPage() {
               invalid={Boolean(form.errors.priceAmount)}
               onChange={(event) => form.setField('priceAmount', Number(event.target.value))}
             />
+            <p className="mt-2 text-sm text-muted">
+              El precio se calcula automáticamente por hora. Ejemplo: 1h = ${form.values.priceAmount}, 1.5h = ${Number(form.values.priceAmount) * 1.5}, 2h = ${Number(form.values.priceAmount) * 2}
+            </p>
           </Field>
           <Field label="Prioridad" htmlFor="pricing-priority" required error={form.errors.priority}>
             <Input

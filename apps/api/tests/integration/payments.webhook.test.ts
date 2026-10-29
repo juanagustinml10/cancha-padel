@@ -206,4 +206,40 @@ describeIntegration('Pagos · webhooks (requiere TEST_DATABASE_URL)', () => {
     const booking = await prisma.booking.findUniqueOrThrow({ where: { id: bookingId } });
     expect(booking.status).toBe('CONFIRMED');
   });
+
+  it('descuenta el importe pagado si el proveedor notifica un reintegro', async () => {
+    // 1) Primero: pago aprobado → reserva confirmada con 30_000 pagados.
+    providerMock.getPayment.mockResolvedValue(approvedPayment());
+    const approved = await processMercadoPagoWebhook({
+      eventId: 'evt-ap',
+      eventType: 'payment',
+      dataId: '999',
+      headers: { 'x-signature': 'ts=1,v1=x', 'x-request-id': 'req-1' },
+      payload: { id: 'evt-ap', type: 'payment', data: { id: '999' } },
+    });
+    expect(approved.status).toBe('processed');
+
+    let booking = await prisma.booking.findUniqueOrThrow({ where: { id: bookingId } });
+    expect(booking.paidAmountCents).toBe(30_000);
+
+    // 2) Después: el proveedor notifica `refunded` para el mismo pago.
+    providerMock.getPayment.mockResolvedValue(approvedPayment({ status: 'refunded' }));
+    const refunded = await processMercadoPagoWebhook({
+      eventId: 'evt-refund',
+      eventType: 'payment',
+      dataId: '999',
+      headers: { 'x-signature': 'ts=1,v1=x', 'x-request-id': 'req-1' },
+      payload: { id: 'evt-refund', type: 'payment', data: { id: '999' } },
+    });
+
+    expect(refunded.status).toBe('processed');
+
+    booking = await prisma.booking.findUniqueOrThrow({ where: { id: bookingId } });
+    expect(booking.paidAmountCents).toBe(0);
+    expect(booking.status).toBe('CONFIRMED'); // el reintegro no cancela la reserva
+
+    const payment = await prisma.payment.findUniqueOrThrow({ where: { providerPaymentId: '999' } });
+    expect(payment.status).toBe('REFUNDED');
+    expect(payment.refundedAt).not.toBeNull();
+  });
 });

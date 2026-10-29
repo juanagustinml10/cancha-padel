@@ -6,7 +6,7 @@ import {
   type Payment,
   type PaymentProvider,
 } from '@padel/shared';
-import { Prisma } from '@prisma/client';
+import { Prisma, type Booking as PrismaBooking } from '@prisma/client';
 import { env } from '@/config/env';
 import { notFound, unprocessable } from '@/domain/errors';
 import { prisma } from '@/infra/prisma';
@@ -162,6 +162,35 @@ export interface ManualPaymentInput {
 const BOOKING_INCLUDE = { booking: { include: { customer: true } } } satisfies Prisma.PaymentInclude;
 
 /**
+ * Namespace de advisory locks de pagos. Distinto del namespace de reservas
+ * (`COURT_LOCK_NAMESPACE = 4242`, bookings.service.ts): los locks nunca colisionan
+ * entre dominios y no hay camino de deadlock entre ambos flujos.
+ */
+const PAYMENT_LOCK_NAMESPACE = 4343;
+
+type PaymentTxClient = Prisma.TransactionClient;
+
+/**
+ * Serializa toda mutación de pagos de una misma reserva.
+ *
+ * Dentro de la transacción se toma un advisory lock por reserva y se re-lee el
+ * estado actual de la reserva (snapshot fresco). Evita la condición de carrera
+ * read-modify-write por la que dos pagos simultáneos podían perder incrementos
+ * de `paidAmountCents`.
+ */
+async function withBookingPaymentTx<T>(
+  bookingId: string,
+  fn: (tx: PaymentTxClient, booking: PrismaBooking) => Promise<T>,
+): Promise<T> {
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PAYMENT_LOCK_NAMESPACE}::int, hashtext(${bookingId})::int)`;
+    const booking = await tx.booking.findUnique({ where: { id: bookingId } });
+    if (!booking) throw notFound('Reserva no encontrada.', 'BOOKING_NOT_FOUND');
+    return fn(tx, booking);
+  });
+}
+
+/**
  * Registra un pago manual (efectivo o transferencia) realizado en el club.
  *
  * Queda asentado con trazabilidad (`provider = MANUAL`, estado `APPROVED`), se actualiza el
@@ -169,20 +198,17 @@ const BOOKING_INCLUDE = { booking: { include: { customer: true } } } satisfies P
  * exigida fue cubierta. Nunca se apoya en un cobro online: es un asiento del staff.
  */
 export async function registerManualPayment(input: ManualPaymentInput): Promise<Payment> {
-  const booking = await prisma.booking.findUnique({ where: { id: input.bookingId } });
-  if (!booking) throw notFound('Reserva no encontrada.', 'BOOKING_NOT_FOUND');
-
-  if (booking.status === 'CANCELLED' || booking.status === 'EXPIRED') {
-    throw unprocessable(
-      'No se puede registrar un pago sobre una reserva cancelada o vencida.',
-      'BOOKING_NOT_PAYABLE',
-    );
-  }
-
   const detailParts = [input.reference?.trim(), input.note?.trim()].filter(Boolean);
   const statusDetail = detailParts.length > 0 ? detailParts.join(' · ') : null;
 
-  const paymentId = await prisma.$transaction(async (tx) => {
+  const paymentId = await withBookingPaymentTx(input.bookingId, async (tx, booking) => {
+    if (booking.status === 'CANCELLED' || booking.status === 'EXPIRED') {
+      throw unprocessable(
+        'No se puede registrar un pago sobre una reserva cancelada o vencida.',
+        'BOOKING_NOT_PAYABLE',
+      );
+    }
+
     const payment = await tx.payment.create({
       data: {
         bookingId: booking.id,
@@ -240,17 +266,21 @@ export async function confirmManualPayment(id: string): Promise<Payment> {
       'PAYMENT_NOT_MANUAL',
     );
   }
-  if (payment.status !== PaymentStatus.PENDING) {
-    throw unprocessable('El pago no está pendiente de confirmación.', 'PAYMENT_NOT_PENDING');
-  }
 
   const now = new Date();
 
-  await prisma.$transaction(async (tx) => {
-    const booking = await tx.booking.findUniqueOrThrow({ where: { id: payment.bookingId } });
+  await withBookingPaymentTx(payment.bookingId, async (tx, booking) => {
+    // Re-chequeo con lock: dos confirmaciones simultáneas del mismo pago se serializan
+    // y la segunda ve el estado ya `APPROVED` (evita dobles contabilizaciones).
+    const current = await tx.payment.findUnique({ where: { id } });
+    if (!current) throw notFound('Pago no encontrado.', 'PAYMENT_NOT_FOUND');
+    if (current.status !== PaymentStatus.PENDING) {
+      throw unprocessable('El pago no está pendiente de confirmación.', 'PAYMENT_NOT_PENDING');
+    }
+
     const paidAmountCents = Math.min(
       booking.priceTotalCents,
-      booking.paidAmountCents + payment.amountCents,
+      booking.paidAmountCents + current.amountCents,
     );
     const shouldConfirm =
       booking.status === 'PENDING_PAYMENT' && paidAmountCents >= booking.depositAmountCents;
@@ -311,33 +341,63 @@ export async function rejectManualPayment(id: string, reason?: string): Promise<
   return serializePayment(updated);
 }
 
+/**
+ * Reintegra un pago aprobado.
+ *
+ * Cambios respecto del cheque de negocio de devoluciones (verificado con las pruebas):
+ * 1. **Descuenta el importe** del total pagado de la reserva, sin permitir valores
+ *    negativos (clamped en 0, coherente con la constraint `Booking_paid_non_negative`).
+ * 2. **Es único:** dentro del lock de pagos se re-verifica el estado del pago, de modo
+ *    que dos reintegros concurrentes no descontarán dos veces la misma devolución
+ *    (el perdedor recibe `PAYMENT_NOT_APPROVED`).
+ * 3. **El estado de la reserva no cambia:** la cancelación sigue siendo una acción
+ *    explícita del staff con motivo registrado (`cancelBooking`); un reintegro sólo
+ *    corrige la contabilidad del dinero de la reserva.
+ */
 export async function refundPayment(id: string): Promise<Payment> {
-  const payment = await prisma.payment.findUnique({
-    where: { id },
-    include: BOOKING_INCLUDE,
-  });
+  const payment = await prisma.payment.findUnique({ where: { id } });
   if (!payment) throw notFound('Pago no encontrado.', 'PAYMENT_NOT_FOUND');
 
   if (payment.status !== PaymentStatus.APPROVED) {
     throw unprocessable('Sólo se pueden reintegrar pagos aprobados.', 'PAYMENT_NOT_APPROVED');
   }
 
-  // Los pagos manuales se reintegran sólo a nivel de registro (el dinero se devuelve en el club);
-  // los cobros online requieren el identificador del proveedor para ejecutar el reintegro real.
-  if (payment.provider !== 'MANUAL') {
-    if (!payment.providerPaymentId) {
-      throw unprocessable(
-        'El pago no tiene un identificador del proveedor.',
-        'PAYMENT_NOT_REFUNDABLE',
-      );
-    }
-    await paymentProvider.refund(payment.providerPaymentId, payment.amountCents);
-  }
+  const bookingId = payment.bookingId;
 
-  const updated = await prisma.payment.update({
-    where: { id },
-    data: { status: PaymentStatus.REFUNDED, refundedAt: new Date() },
-    include: BOOKING_INCLUDE,
+  const updated = await withBookingPaymentTx(bookingId, async (tx, booking) => {
+    // Re-chequeo con lock: evita que dos reintegros concurrentes pasen por la
+    // validación y ejecuten el reintegro (y el descuento) dos veces.
+    const current = await tx.payment.findUnique({ where: { id } });
+    if (!current) throw notFound('Pago no encontrado.', 'PAYMENT_NOT_FOUND');
+    if (current.status !== PaymentStatus.APPROVED) {
+      throw unprocessable('Sólo se pueden reintegrar pagos aprobados.', 'PAYMENT_NOT_APPROVED');
+    }
+
+    // Los pagos manuales se reintegran sólo a nivel de registro (el dinero se devuelve
+    // en el club); los cobros online requieren el identificador del proveedor para
+    // ejecutar el reintegro real. La llamada se hace dentro de la transacción para que
+    // un error del proveedor deshaga el estado (y para que un segundo operador
+    // reintente en lugar de duplicar).
+    if (current.provider !== 'MANUAL') {
+      if (!current.providerPaymentId) {
+        throw unprocessable(
+          'El pago no tiene un identificador del proveedor.',
+          'PAYMENT_NOT_REFUNDABLE',
+        );
+      }
+      await paymentProvider.refund(current.providerPaymentId, current.amountCents);
+    }
+
+    await tx.booking.update({
+      where: { id: booking.id },
+      data: { paidAmountCents: Math.max(0, booking.paidAmountCents - current.amountCents) },
+    });
+
+    return tx.payment.update({
+      where: { id },
+      data: { status: PaymentStatus.REFUNDED, refundedAt: new Date() },
+      include: BOOKING_INCLUDE,
+    });
   });
 
   return serializePayment(updated);

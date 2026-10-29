@@ -17,12 +17,17 @@ import { useAsync } from '@/hooks/useAsync';
 import { useZodForm } from '@/hooks/useZodForm';
 import { adminApi } from '@/services/adminApi';
 import { useToast } from '@/context/ToastContext';
+import { useAuth } from '@/context/AuthContext';
 import { getErrorMessage } from '@/lib/errors';
 import { clubDateTimeToIso, todayIso } from '@/lib/datetime';
 import { formatDateShort, formatTime, weekdayLabel } from '@/lib/format';
 
 export function AdminSchedulePage() {
   const toast = useToast();
+  const { user } = useAuth();
+  // Autoridad real de permisos: el backend exige ADMIN para PUT /admin/schedules.
+  // Recepción puede VER horarios y gestionar bloqueos, pero no modificar horarios.
+  const canEditSchedule = user?.role === 'ADMIN';
   const schedule = useAsync(() => adminApi.getSchedule(), []);
   const blocks = useAsync(() => adminApi.listBlocks(), []);
   const courts = useAsync(() => adminApi.listCourts(), []);
@@ -132,12 +137,20 @@ export function AdminSchedulePage() {
         title="Horarios de atención"
         description="Definí la apertura, el cierre y la granularidad de turnos por día."
         actions={
-          <Button leftIcon={<Save className="h-4 w-4" />} onClick={handleSave} loading={saving}>
-            Guardar horarios
-          </Button>
+          canEditSchedule ? (
+            <Button leftIcon={<Save className="h-4 w-4" />} onClick={handleSave} loading={saving}>
+              Guardar horarios
+            </Button>
+          ) : null
         }
       />
 
+      {!canEditSchedule ? (
+        <p className="rounded-md border border-border bg-surface-2 px-4 py-3 text-sm text-muted">
+          Los horarios de atención sólo pueden modificarse por un administrador. La vista es de
+          sólo lectura; podés seguir gestionando bloqueos.
+        </p>
+      ) : null}
       <Card className="overflow-hidden">
         <div className="divide-y divide-border md:hidden">
           {rows
@@ -151,6 +164,7 @@ export function AdminSchedulePage() {
                     <input
                       type="checkbox"
                       className="h-4 w-4 rounded border-border text-accent focus:ring-accent"
+                      disabled={!canEditSchedule}
                       checked={row.isActive}
                       onChange={(event) => updateRow(row.weekday, { isActive: event.target.checked })}
                     />
@@ -162,6 +176,7 @@ export function AdminSchedulePage() {
                     <Input
                       id={`opens-${row.id}`}
                       type="time"
+                      disabled={!canEditSchedule}
                       className="h-10"
                       value={row.opensAt}
                       onChange={(event) => updateRow(row.weekday, { opensAt: event.target.value })}
@@ -171,6 +186,7 @@ export function AdminSchedulePage() {
                     <Input
                       id={`closes-${row.id}`}
                       type="time"
+                      disabled={!canEditSchedule}
                       className="h-10"
                       value={row.closesAt}
                       onChange={(event) => updateRow(row.weekday, { closesAt: event.target.value })}
@@ -181,6 +197,7 @@ export function AdminSchedulePage() {
                   <Input
                     id={`slot-${row.id}`}
                     type="number"
+                    disabled={!canEditSchedule}
                     min={15}
                     step={15}
                     className="h-10"
@@ -213,6 +230,7 @@ export function AdminSchedulePage() {
                     <td className="px-4 py-2">
                       <Input
                         type="time"
+                        disabled={!canEditSchedule}
                         className="h-9 w-32"
                         value={row.opensAt}
                         onChange={(event) => updateRow(row.weekday, { opensAt: event.target.value })}
@@ -221,6 +239,7 @@ export function AdminSchedulePage() {
                     <td className="px-4 py-2">
                       <Input
                         type="time"
+                        disabled={!canEditSchedule}
                         className="h-9 w-32"
                         value={row.closesAt}
                         onChange={(event) => updateRow(row.weekday, { closesAt: event.target.value })}
@@ -229,6 +248,7 @@ export function AdminSchedulePage() {
                     <td className="px-4 py-2">
                       <Input
                         type="number"
+                        disabled={!canEditSchedule}
                         min={15}
                         step={15}
                         className="h-9 w-24"
@@ -239,7 +259,8 @@ export function AdminSchedulePage() {
                     <td className="px-4 py-2">
                       <input
                         type="checkbox"
-                        className="h-4 w-4 rounded border-border text-accent focus:ring-accent"
+                        className="h-4 w-4 rounded border-border text-accent focus:ring-accent disabled:opacity-50"
+                        disabled={!canEditSchedule}
                         checked={row.isActive}
                         onChange={(event) => updateRow(row.weekday, { isActive: event.target.checked })}
                         aria-label={`Activar ${weekdayLabel(row.weekday)}`}

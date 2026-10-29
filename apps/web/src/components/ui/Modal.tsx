@@ -26,12 +26,18 @@ const FOCUSABLE =
 export function Modal({ open, onClose, title, description, children, footer, size = 'md' }: ModalProps) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
+  // Guardamos onClose en un ref para que el efecto de foco/teclado no dependa de
+  // una prop que cambia en cada render (robaría el foco de los inputs al tipear).
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
     const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') onCloseRef.current();
       if (event.key === 'Tab' && dialogRef.current) {
         const nodes = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
         if (nodes.length === 0) return;
@@ -56,7 +62,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
       window.clearTimeout(focusTimer);
       previouslyFocused?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

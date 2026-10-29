@@ -224,6 +224,8 @@ async function resolveBookingPricing(context: SlotContext): Promise<PricingResol
     currency: rule.currency,
     isActive: rule.isActive,
     priority: rule.priority,
+    validFrom: rule.validFrom,
+    validTo: rule.validTo,
   }));
 
   const resolved = resolvePrice(inputs, {
@@ -231,6 +233,8 @@ async function resolveBookingPricing(context: SlotContext): Promise<PricingResol
     weekday: context.weekday,
     startTime: context.startTime,
     durationMinutes: context.durationMinutes,
+    // La vigencia se evalúa contra el instante del turno (TZ-safe: ambos timestamptz).
+    at: context.startsAt,
   });
 
   const depositAmountCents = computeDeposit(resolved.priceCents, settings);
